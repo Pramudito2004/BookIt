@@ -238,11 +238,11 @@ export default function PaymentSuccessPage() {
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Transaction ID</span>
-                    <span className="font-medium">{transaction.id}</span>
+                    <span className="font-medium text-gray-800">{transaction.id}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Date & Time</span>
-                    <span>{transaction.date}</span>
+                    <span className="text-gray-800">{transaction.date}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Status</span>
@@ -252,11 +252,11 @@ export default function PaymentSuccessPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Payment Method</span>
-                    <span>{transaction.paymentMethod}</span>
+                    <span className="text-gray-800">{transaction.paymentMethod}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Amount Paid</span>
-                    <span className="font-bold">{transaction.amount}</span>
+                    <span className="font-bold text-gray-800">{transaction.amount}</span>
                   </div>
                 </div>
               </div>
@@ -264,7 +264,7 @@ export default function PaymentSuccessPage() {
               {/* Ticket Information */}
               <div className="border border-gray-200 rounded-lg overflow-hidden mb-8">
                 <div className="p-4 bg-gray-50 border-b border-gray-200">
-                  <h2 className="font-bold">Ticket Information</h2>
+                  <h2 className="font-bold text-gray-800">Ticket Information</h2>
                 </div>
                 <div className="p-4">
                   <div className="flex flex-col md:flex-row gap-4 md:gap-8">
@@ -272,15 +272,15 @@ export default function PaymentSuccessPage() {
                       <div className="space-y-3">
                         <div>
                           <h3 className="text-gray-500 text-sm">Event</h3>
-                          <p className="font-bold">{transaction.eventTitle}</p>
+                          <p className="font-bold text-gray-800">{transaction.eventTitle}</p>
                         </div>
                         <div>
                           <h3 className="text-gray-500 text-sm">Date</h3>
-                          <p>{transaction.eventDate}</p>
+                          <p className="text-gray-800">{transaction.eventDate}</p>
                         </div>
                         <div>
                           <h3 className="text-gray-500 text-sm">Location</h3>
-                          <p>{transaction.eventLocation}</p>
+                          <p className="text-gray-800">{transaction.eventLocation}</p>
                         </div>
                       </div>
                     </div>
@@ -288,14 +288,14 @@ export default function PaymentSuccessPage() {
                       <div className="space-y-3">
                         <div>
                           <h3 className="text-gray-500 text-sm">Ticket</h3>
-                          <p>
+                          <p className="text-gray-800">
                             {transaction.ticketType} × {transaction.quantity}
                           </p>
                         </div>
                         <div>
                           <h3 className="text-gray-500 text-sm">Ticket Code</h3>
                           <div className="flex items-center mt-1">
-                            <span className="bg-gray-100 py-1 px-3 rounded font-mono text-lg tracking-wider mr-2">
+                            <span className="text-gray-800 bg-gray-100 py-1 px-3 rounded font-mono text-lg tracking-wider mr-2">
                               {transaction.ticketCode}
                             </span>
                             <button
@@ -354,7 +354,7 @@ export default function PaymentSuccessPage() {
                       className="object-cover"
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="px-4 py-2 bg-white/80 rounded-lg text-sm font-medium">
+                      <span className="px-4 py-2 bg-white/80 rounded-lg text-sm font-medium text-gray-800">
                         QR Code would be here
                       </span>
                     </div>

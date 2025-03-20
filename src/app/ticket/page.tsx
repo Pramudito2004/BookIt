@@ -369,7 +369,7 @@ export default function TicketPage() {
                 <input
                   type="text"
                   placeholder="Cari event, konser, pameran..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full pl-10 pr-4 py-3 text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
               <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium shadow-md">
@@ -460,7 +460,7 @@ export default function TicketPage() {
         <div className="flex overflow-x-auto pb-2 -mx-2 scrollbar-hide">
           {categories.map((category, index) => (
             <div key={index} className="flex-shrink-0 px-2">
-              <button className="flex items-center space-x-2 bg-white border border-gray-200 rounded-full px-5 py-2.5 text-sm hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all duration-200 shadow-sm">
+              <button className="flex items-center space-x-2 bg-white text-gray-800 border border-gray-200 rounded-full px-5 py-2.5 text-sm hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-all duration-200 shadow-sm">
                 <span className="text-xl">{category.icon}</span>
                 <span className="font-medium">{category.name}</span>
               </button>
@@ -479,7 +479,7 @@ export default function TicketPage() {
           </div>
           {cities.map((city, index) => (
             <div key={index} className="flex-shrink-0 px-2">
-              <button className="flex items-center space-x-1 bg-white border border-gray-200 rounded-full px-5 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 font-medium shadow-sm">
+              <button className="flex items-center space-x-1 bg-white text-gray-800 border border-gray-200 rounded-full px-5 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 font-medium shadow-sm">
                 <span>{city}</span>
               </button>
             </div>

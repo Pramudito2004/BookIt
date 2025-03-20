@@ -327,10 +327,10 @@ export default function EventDetailPage() {
               {/* Description Tab */}
               {activeTab === "description" && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-4">About This Event</h2>
+                  <h2 className="text-2xl font-bold mb-4 text-gray-800">About This Event</h2>
                   <p className="text-gray-700 mb-6">{event.description}</p>
 
-                  <h3 className="text-xl font-bold mb-3">What to Expect</h3>
+                  <h3 className="text-xl font-bold mb-3 text-gray-800">What to Expect</h3>
                   <ul className="space-y-2 mb-6">
                     {event.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
@@ -352,7 +352,7 @@ export default function EventDetailPage() {
                     ))}
                   </ul>
 
-                  <h3 className="text-xl font-bold mb-3">Event Gallery</h3>
+                  <h3 className="text-xl font-bold mb-3 text-gray-800">Event Gallery</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                     {event.gallery.map((image, index) => (
                       <div
@@ -374,7 +374,7 @@ export default function EventDetailPage() {
               {/* Lineup Tab */}
               {activeTab === "lineup" && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-6">Event Lineup</h2>
+                  <h2 className="text-2xl font-bold mb-6 text-gray-800">Event Lineup</h2>
                   <div className="space-y-4">
                     {event.lineup.map((artist, index) => (
                       <div
@@ -382,7 +382,7 @@ export default function EventDetailPage() {
                         className="flex flex-col md:flex-row justify-between p-4 border border-gray-200 rounded-lg hover:border-indigo-200 hover:bg-indigo-50 transition-colors"
                       >
                         <div>
-                          <h3 className="font-bold text-lg">{artist.name}</h3>
+                          <h3 className="font-bold text-lg text-gray-800">{artist.name}</h3>
                           <p className="text-gray-600">{artist.day}</p>
                         </div>
                         <div className="flex items-center text-indigo-600 font-medium mt-2 md:mt-0">
@@ -410,10 +410,10 @@ export default function EventDetailPage() {
               {/* Location Tab */}
               {activeTab === "location" && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-4">Event Location</h2>
+                  <h2 className="text-2xl font-bold mb-4 text-gray-800">Event Location</h2>
                   <div className="bg-gray-100 p-4 rounded-lg mb-6">
-                    <h3 className="font-bold mb-2">{event.location}</h3>
-                    <p className="text-gray-700 mb-4">{event.address}</p>
+                    <h3 className="font-bold mb-2 text-gray-800">{event.location}</h3>
+                    <p className="text-gray-700 mb-4 text-gray-800">{event.address}</p>
                     <div className="relative w-full h-64 rounded-lg overflow-hidden">
                       <Image
                         src="/api/placeholder/800/400"
@@ -422,14 +422,14 @@ export default function EventDetailPage() {
                         className="object-cover"
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="px-4 py-2 bg-white/80 rounded-lg text-sm font-medium">
+                        <span className="px-4 py-2 bg-white/80 rounded-lg text-sm font-medium text-gray-800">
                           Interactive map would be displayed here
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold mb-3">Getting There</h3>
+                  <h3 className="text-xl font-bold mb-3 text-gray-800">Getting There</h3>
                   <div className="space-y-4">
                     <div className="flex items-start">
                       <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
@@ -448,7 +448,7 @@ export default function EventDetailPage() {
                         </svg>
                       </div>
                       <div>
-                        <h4 className="font-bold mb-1">
+                        <h4 className="font-bold mb-1 text-gray-800">
                           Public Transportation
                         </h4>
                         <p className="text-gray-700">
@@ -477,7 +477,7 @@ export default function EventDetailPage() {
                         </svg>
                       </div>
                       <div>
-                        <h4 className="font-bold mb-1">Parking</h4>
+                        <h4 className="font-bold mb-1 text-gray-800">Parking</h4>
                         <p className="text-gray-700">
                           On-site parking available for Rp 25.000 per entry
                         </p>
@@ -491,7 +491,7 @@ export default function EventDetailPage() {
               {activeTab === "reviews" && (
                 <div>
                   <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold">Reviews & Ratings</h2>
+                    <h2 className="text-2xl font-bold text-gray-800">Reviews & Ratings</h2>
                     <button className="text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
                       Write a Review
                     </button>
@@ -501,7 +501,7 @@ export default function EventDetailPage() {
                     {event.reviews.map((review) => (
                       <div
                         key={review.id}
-                        className="border-b border-gray-200 pb-6 last:border-0"
+                        className="text-gray-800 border-b border-gray-200 pb-6 last:border-0"
                       >
                         <div className="flex justify-between mb-2">
                           <h3 className="font-bold">{review.name}</h3>
@@ -537,7 +537,7 @@ export default function EventDetailPage() {
           {/* Right Column - Ticket Selection */}
           <div className="lg:w-1/3 mt-8 lg:mt-0">
             <div className="bg-white p-6 rounded-xl shadow-sm sticky top-24">
-              <h2 className="text-xl font-bold mb-4">Select Tickets</h2>
+              <h2 className="text-xl font-bold mb-4 text-gray-800">Select Tickets</h2>
 
               {/* Ticket Type Selection */}
               <div className="space-y-4 mb-6">
@@ -552,7 +552,7 @@ export default function EventDetailPage() {
                     }`}
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <h3 className="font-bold">{ticket.name}</h3>
+                      <h3 className="font-bold text-gray-800">{ticket.name}</h3>
                       <span className="font-bold text-indigo-600">
                         {ticket.price}
                       </span>
@@ -566,7 +566,7 @@ export default function EventDetailPage() {
 
               {/* Ticket Quantity */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 mb-2 ">
                   Number of Tickets
                 </label>
                 <div className="flex items-center">
@@ -599,7 +599,7 @@ export default function EventDetailPage() {
                         Math.max(1, parseInt(e.target.value) || 1)
                       )
                     }
-                    className="w-16 h-10 text-center border-t border-b border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
+                    className="w-16 h-10 text-center border-t border-b text-gray-800 border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
                   />
                   <button
                     onClick={() => setTicketQuantity(ticketQuantity + 1)}
@@ -624,15 +624,15 @@ export default function EventDetailPage() {
 
               {/* Price Summary */}
               <div className="border-t border-gray-200 pt-4 mb-6">
-                <div className="flex justify-between mb-2">
+                <div className="flex justify-between mb-2 text-gray-800">
                   <span className="text-gray-600">Price per ticket</span>
                   <span>{selectedTicket?.price}</span>
                 </div>
-                <div className="flex justify-between mb-2">
+                <div className="flex justify-between mb-2 text-gray-800">
                   <span className="text-gray-600">Quantity</span>
                   <span>{ticketQuantity}</span>
                 </div>
-                <div className="flex justify-between font-bold text-lg">
+                <div className="flex justify-between font-bold text-lg text-gray-800">
                   <span>Total</span>
                   <span>{formattedPrice}</span>
                 </div>
@@ -777,12 +777,12 @@ export default function EventDetailPage() {
       {/* Related Events */}
       <div className="bg-gray-50 py-12">
         <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8">You Might Also Like</h2>
+          <h2 className="text-2xl font-bold mb-8 text-gray-800">You Might Also Like</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((item) => (
               <div
                 key={item}
-                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+                className="bg-white text-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
               >
                 <div className="relative h-48">
                   <Image
