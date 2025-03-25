@@ -163,12 +163,12 @@ export default function ReportsPage() {
               <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-500">Total Pendapatan</h3>
                 <p className="text-2xl font-bold">Rp12.450.000</p>
-                <p className="text-sm text-green-600">+12% dari bulan lalu</p>
+                <p className="text-sm text-green-600"></p>
               </div>
               <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-500">Tiket Terjual</h3>
                 <p className="text-2xl font-bold">1.240</p>
-                <p className="text-sm text-green-600">+8% dari bulan lalu</p>
+                <p className="text-sm text-green-600"></p>
               </div>
               <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
                 <h3 className="text-sm font-medium text-gray-500">Event Aktif</h3>
