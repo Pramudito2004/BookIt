@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Sidebar from '@/app/components/sidebar';
+import { LiaAnkhSolid } from "react-icons/lia";
 
 
 
@@ -414,29 +415,37 @@ export default function AdminDashboard() {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-md p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Create New Event</h3>
               <p className="mb-4 text-white/80">
-                Start setting up your next event with our streamlined creation process.
+              Mulailah menyiapkan acara Anda berikutnya dengan proses pembuatan kami yang efisien..
               </p>
-              <button className="bg-white text-indigo-600 hover:bg-indigo-50 rounded-lg px-4 py-2 text-sm font-medium transition-all">
+              <Link
+                href="/"
+                className="bg-white text-indigo-600 hover:bg-indigo-50 rounded-lg px-4 py-2 text-sm font-medium transition-all">
                 Create Event
-              </button>
+              </Link>
             </div>
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-md p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Generate Reports</h3>
               <p className="mb-4 text-white/80">
-                Get insights into your business with detailed analytics and reports.
+              Dapatkan laporan tentang bisnis Anda dengan analisis yang terperinci..
               </p>
-              <button className="bg-white text-purple-600 hover:bg-purple-50 rounded-lg px-4 py-2 text-sm font-medium transition-all">
+              <Link 
+                href="/organizer/reports" 
+                className="inline-block bg-white text-purple-600 hover:bg-purple-50 rounded-lg px-4 py-2 text-sm font-medium transition-all"
+              >
                 View Reports
-              </button>
+              </Link>
             </div>
             <div className="bg-gradient-to-r from-pink-500 to-red-500 rounded-xl shadow-md p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Manage Settings</h3>
               <p className="mb-4 text-white/80">
-                Update your platform settings and customize the appearance.
+              Perbarui pengaturan platform Anda dan sesuaikan tampilannya..
               </p>
-              <button className="bg-white text-pink-600 hover:bg-pink-50 rounded-lg px-4 py-2 text-sm font-medium transition-all">
+              <Link
+                href="/organizer/pengaturan"
+                className="bg-white text-pink-600 hover:bg-pink-50 rounded-lg px-4 py-2 text-sm font-medium transition-all">
                 Go to Settings
-              </button>
+                </Link>
+            
             </div>
           </div>
         </div>
