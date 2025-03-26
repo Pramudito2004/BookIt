@@ -4,9 +4,6 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import Sidebar from '@/app/components/sidebar';
-import { LiaAnkhSolid } from "react-icons/lia";
-
-
 
 export default function AdminDashboard() {
   // State for sidebar collapse
