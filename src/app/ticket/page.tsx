@@ -479,7 +479,7 @@ export default function TicketPage() {
           </div>
           {cities.map((city, index) => (
             <div key={index} className="flex-shrink-0 px-2">
-              <button className="flex items-center space-x-1 bg-white border border-gray-200 rounded-full px-5 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 font-medium shadow-sm">
+              <button className="flex items-center space-x-1 bg-white border border-gray-200 rounded-full px-5 py-2.5 text-sm text-gray-800 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all duration-200 font-medium shadow-sm">
                 <span>{city}</span>
               </button>
             </div>
