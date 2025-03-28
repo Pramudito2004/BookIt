@@ -1,3 +1,4 @@
+// src\app\ticket\[id]\page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,29 +13,49 @@ export default function EventDetailPage() {
   const eventId = params.id;
   const [activeTab, setActiveTab] = useState("description");
   const [ticketQuantity, setTicketQuantity] = useState(1);
-  const [selectedTicketType, setSelectedTicketType] = useState("regular");
+  const [selectedTicketType, setSelectedTicketType] = useState<string | null>(
+    null
+  );
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  // Mock event data - in a real app you would fetch this based on eventId
+  // Mock event data based on Prisma schema
   const event = {
-    id: eventId,
-    title: "Java Jazz Festival 2025",
-    date: "24-26 March 2025",
-    time: "18:00 - 23:00",
-    location: "JIExpo Kemayoran, Jakarta",
-    address:
-      "Jl. Benyamin Sueb, Pademangan Tim., Jakarta Utara, DKI Jakarta 14410",
-    category: "Music",
-    image: "/image/bali.jpeg",
-    organizer: "Java Festival Production",
-    description:
+    event_id: eventId,
+    nama_event: "Java Jazz Festival 2025",
+    deskripsi:
       "Java Jazz Festival is one of the biggest jazz festivals in the world, showcasing more than 100 performances on several stages by jazz artists from around the globe. Experience the magic of world-class jazz performances in the heart of Jakarta.",
-    features: [
-      "100+ local and international jazz artists",
-      "Multiple stages with simultaneous performances",
-      "Food and beverage stands",
-      "Merchandise booths",
-      "Meet & Greet sessions with selected artists",
+    lokasi: "JIExpo Kemayoran, Jakarta",
+    tanggal_mulai: new Date("2025-03-24T18:00:00"),
+    tanggal_selesai: new Date("2025-03-26T23:00:00"),
+    foto_event: "/image/bali.jpeg",
+    kategori_event: "Music",
+    creator: {
+      nama_brand: "Java Festival Production",
+      kontak: "+62 812-3456-7890",
+    },
+    tipe_tikets: [
+      {
+        tiket_type_id: "regular",
+        nama: "Regular Pass",
+        harga: 850000,
+        jumlah_tersedia: 500,
+        deskripsi: "Access to all stages for one day of your choice",
+      },
+      {
+        tiket_type_id: "vip",
+        nama: "Special VIP",
+        harga: 1250000,
+        jumlah_tersedia: 200,
+        deskripsi:
+          "Access to all stages for one day plus exclusive lounge access",
+      },
+      {
+        tiket_type_id: "exclusive",
+        nama: "Exclusive",
+        harga: 2100000,
+        jumlah_tersedia: 100,
+        deskripsi: "Access to all stages for all three days",
+      },
     ],
     lineup: [
       { name: "Diana Krall", time: "21:00 - 22:30", day: "Friday, 24 March" },
@@ -51,43 +72,22 @@ export default function EventDetailPage() {
         day: "Saturday, 25 March",
       },
     ],
-    ticketTypes: [
-      {
-        id: "regular",
-        name: "Regular Pass",
-        price: "Rp 850.000",
-        priceValue: 850000,
-        description: "Access to all stages for one day of your choice",
-      },
-      {
-        id: "daily-special",
-        name: "Daily Special",
-        price: "Rp 1.250.000",
-        priceValue: 1250000,
-        description:
-          "Access to all stages for one day plus exclusive lounge access",
-      },
-      {
-        id: "3-day",
-        name: "3-Day Pass",
-        price: "Rp 2.100.000",
-        priceValue: 2100000,
-        description: "Access to all stages for all three days",
-      },
-    ],
   };
 
   // Calculate ticket price based on selected ticket type and quantity
-  const selectedTicket = event.ticketTypes.find(
-    (t) => t.id === selectedTicketType
+  const selectedTicket = event.tipe_tikets.find(
+    (t) => t.tiket_type_id === selectedTicketType
   );
   const totalPrice = selectedTicket
-    ? selectedTicket.priceValue * ticketQuantity
+    ? Number(selectedTicket.harga) * ticketQuantity
     : 0;
   const formattedPrice = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
   }).format(totalPrice);
+
+  // Rest of the component remains the same as the previous implementation
+  // ... (copy the entire previous implementation, replacing event references)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -95,8 +95,8 @@ export default function EventDetailPage() {
       {/* Event Header with Image */}
       <div className="w-full h-[50vh] relative pt-16">
         <Image
-          src={event.image}
-          alt={event.title}
+          src={event.foto_event}
+          alt={event.nama_event}
           fill
           className="object-cover"
         />
@@ -105,14 +105,28 @@ export default function EventDetailPage() {
         <div className="absolute bottom-0 left-0 right-0 p-8 container mx-auto">
           <div className="flex items-center mb-2">
             <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mr-3">
-              {event.category}
+              {event.kategori_event}
             </span>
             <span className="text-white/90 text-sm">
-              {event.date} • {event.time}
+              {event.tanggal_mulai.toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              •{" "}
+              {event.tanggal_mulai.toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}{" "}
+              -{" "}
+              {event.tanggal_selesai.toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-            {event.title}
+            {event.nama_event}
           </h1>
           <div className="flex items-center text-white/90 mb-4">
             <svg
@@ -134,11 +148,11 @@ export default function EventDetailPage() {
                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            {event.location}
+            {event.lokasi}
           </div>
           <div className="flex items-center text-white/90">
             <span className="mr-2">Organized by:</span>
-            <span className="font-medium">{event.organizer}</span>
+            <span className="font-medium">{event.creator.nama_brand}</span>
           </div>
         </div>
       </div>
@@ -177,32 +191,7 @@ export default function EventDetailPage() {
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
                     About This Event
                   </h2>
-                  <p className="text-gray-700 mb-6">{event.description}</p>
-
-                  <h3 className="text-xl font-bold mb-3 text-gray-800">
-                    What to Expect
-                  </h3>
-                  <ul className="space-y-2 mb-6">
-                    {event.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <svg
-                          className="w-5 h-5 text-indigo-600 mr-2 mt-0.5"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M5 13l4 4L19 7"
-                          />
-                        </svg>
-                        <span className="text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
+                  <p className="text-gray-700 mb-6">{event.deskripsi}</p>
                 </div>
               )}
 
@@ -254,84 +243,8 @@ export default function EventDetailPage() {
                   </h2>
                   <div className="bg-gray-100 p-4 rounded-lg mb-6">
                     <h3 className="font-bold mb-2 text-gray-800">
-                      {event.location}
+                      {event.lokasi}
                     </h3>
-                    <p className="text-gray-700 mb-4 text-gray-800">
-                      {event.address}
-                    </p>
-                    <div className="relative w-full h-64 rounded-lg overflow-hidden">
-                      <Image
-                        src="/api/placeholder/800/400"
-                        alt="Map location"
-                        fill
-                        className="object-cover"
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="px-4 py-2 bg-white/80 rounded-lg text-sm font-medium text-gray-800">
-                          Interactive map would be displayed here
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <h3 className="text-xl font-bold mb-3 text-gray-800">
-                    Getting There
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
-                        <svg
-                          className="w-5 h-5 text-indigo-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="font-bold mb-1 text-gray-800">
-                          Public Transportation
-                        </h4>
-                        <p className="text-gray-700">
-                          TransJakarta Bus: Route 3K from Harmoni to Pademangan
-                        </p>
-                        <p className="text-gray-700">
-                          MRT: Get off at Bundaran HI station, then take a taxi
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
-                        <svg
-                          className="w-5 h-5 text-indigo-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="font-bold mb-1 text-gray-800">
-                          Parking
-                        </h4>
-                        <p className="text-gray-700">
-                          On-site parking available for Rp 25.000 per entry
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 </div>
               )}
@@ -347,24 +260,25 @@ export default function EventDetailPage() {
 
               {/* Ticket Type Selection */}
               <div className="space-y-4 mb-6">
-                {event.ticketTypes.map((ticket) => (
+                {event.tipe_tikets.map((ticket) => (
                   <div
-                    key={ticket.id}
-                    onClick={() => setSelectedTicketType(ticket.id)}
+                    key={ticket.tiket_type_id}
+                    onClick={() => setSelectedTicketType(ticket.tiket_type_id)}
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedTicketType === ticket.id
+                      selectedTicketType === ticket.tiket_type_id
                         ? "border-indigo-600 bg-indigo-50"
                         : "border-gray-200 hover:border-indigo-300"
                     }`}
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <h3 className="font-bold text-gray-800">{ticket.name}</h3>
+                      <h3 className="font-bold text-gray-800">{ticket.nama}</h3>
                       <span className="font-bold text-indigo-600">
-                        {ticket.price}
+                        Rp{ticket.harga.toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {ticket.description}
+                    <p className="text-sm text-gray-600">{ticket.deskripsi}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {ticket.jumlah_tersedia} tickets available
                     </p>
                   </div>
                 ))}
@@ -432,7 +346,11 @@ export default function EventDetailPage() {
               <div className="border-t border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between mb-2 text-gray-800">
                   <span className="text-gray-600">Price per ticket</span>
-                  <span>{selectedTicket?.price}</span>
+                  <span>
+                    {selectedTicket
+                      ? `Rp${selectedTicket.harga.toLocaleString()}`
+                      : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between mb-2 text-gray-800">
                   <span className="text-gray-600">Quantity</span>
@@ -447,7 +365,12 @@ export default function EventDetailPage() {
               {/* Checkout Button */}
               <button
                 onClick={() => setIsCheckoutOpen(true)}
-                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md"
+                disabled={!selectedTicketType}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md ${
+                  selectedTicketType
+                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 Buy Tickets
               </button>
@@ -459,8 +382,9 @@ export default function EventDetailPage() {
       {/* Checkout Modal */}
       {isCheckoutOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl">
-            <div className="p-6">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-screen overflow-y-auto p-4">
+            <div className="p-6 flex flex-col">
+              {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold">Complete Your Purchase</h3>
                 <button
@@ -483,18 +407,32 @@ export default function EventDetailPage() {
                 </button>
               </div>
 
+              {/* Event Details */}
               <div className="mb-6">
-                <h4 className="font-bold mb-2">{event.title}</h4>
+                <h4 className="font-bold mb-2">{event.nama_event}</h4>
                 <div className="text-sm text-gray-600 mb-4">
                   <p>
-                    {event.date} • {event.time}
+                    {event.tanggal_mulai.toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}{" "}
+                    •{" "}
+                    {event.tanggal_mulai.toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    -{" "}
+                    {event.tanggal_selesai.toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
-                  <p>{event.location}</p>
+                  <p>{event.lokasi}</p>
                 </div>
 
                 <div className="bg-indigo-50 p-4 rounded-lg mb-4">
                   <div className="flex justify-between mb-1">
-                    <span>{selectedTicket?.name}</span>
                     <span>x {ticketQuantity}</span>
                   </div>
                   <div className="flex justify-between font-bold">
@@ -504,6 +442,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
+              {/* Form Input */}
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -537,6 +476,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
+              {/* Payment Method */}
               <div className="mb-6">
                 <h4 className="font-medium mb-2">Payment Method</h4>
                 <div className="grid grid-cols-2 gap-3">
@@ -567,6 +507,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
+              {/* Checkout Button */}
               <button className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md">
                 Pay Now
               </button>
@@ -662,7 +603,6 @@ export default function EventDetailPage() {
           </div>
         </div>
       </div>
-
       <Footer />
     </div>
   );
