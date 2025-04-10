@@ -109,24 +109,29 @@ export default function Navbar() {
           </div>
 
           <div className="hidden md:flex items-center space-x-3">
-            <button
-              className={`text-sm py-2 px-5 rounded-full transition-all duration-200 ${
-                isScrolled
-                  ? "border border-indigo-600 text-indigo-600 hover:bg-indigo-50"
-                  : "text-white border border-white/60 hover:bg-white hover:text-indigo-600"
-              }`}
-            >
-              Masuk
-            </button>
-            <button
-              className={`text-sm py-2 px-5 rounded-full transition-all duration-200 shadow-lg ${
-                isScrolled
-                  ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                  : "bg-white text-indigo-600 hover:bg-indigo-100"
-              }`}
-            >
-              Daftar
-            </button>
+            <Link href="/login">
+              <button
+                className={`text-sm py-2 px-5 rounded-full transition-all duration-200 ${
+                  isScrolled
+                    ? "border border-indigo-600 text-indigo-600 hover:bg-indigo-50"
+                    : "text-white border border-white/60 hover:bg-white hover:text-indigo-600"
+                }`}
+              >
+                Masuk
+              </button>
+            </Link>
+
+            <Link href="/register">
+              <button
+                className={`text-sm py-2 px-5 rounded-full transition-all duration-200 shadow-lg ${
+                  isScrolled
+                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                    : "bg-white text-indigo-600 hover:bg-indigo-100"
+                }`}
+              >
+                Daftar
+              </button>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
