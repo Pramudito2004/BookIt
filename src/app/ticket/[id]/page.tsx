@@ -1,3 +1,4 @@
+// src\app\ticket\[id]\page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -12,29 +13,49 @@ export default function EventDetailPage() {
   const eventId = params.id;
   const [activeTab, setActiveTab] = useState("description");
   const [ticketQuantity, setTicketQuantity] = useState(1);
-  const [selectedTicketType, setSelectedTicketType] = useState("regular");
+  const [selectedTicketType, setSelectedTicketType] = useState<string | null>(
+    null
+  );
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
 
-  // Mock event data - in a real app you would fetch this based on eventId
+  // Mock event data based on Prisma schema
   const event = {
-    id: eventId,
-    title: "Java Jazz Festival 2025",
-    date: "24-26 March 2025",
-    time: "18:00 - 23:00",
-    location: "JIExpo Kemayoran, Jakarta",
-    address:
-      "Jl. Benyamin Sueb, Pademangan Tim., Jakarta Utara, DKI Jakarta 14410",
-    category: "Music",
-    image: "/image/bali.jpeg",
-    organizer: "Java Festival Production",
-    description:
+    event_id: eventId,
+    nama_event: "Java Jazz Festival 2025",
+    deskripsi:
       "Java Jazz Festival is one of the biggest jazz festivals in the world, showcasing more than 100 performances on several stages by jazz artists from around the globe. Experience the magic of world-class jazz performances in the heart of Jakarta.",
-    features: [
-      "100+ local and international jazz artists",
-      "Multiple stages with simultaneous performances",
-      "Food and beverage stands",
-      "Merchandise booths",
-      "Meet & Greet sessions with selected artists",
+    lokasi: "JIExpo Kemayoran, Jakarta",
+    tanggal_mulai: new Date("2025-03-24T18:00:00"),
+    tanggal_selesai: new Date("2025-03-26T23:00:00"),
+    foto_event: "/image/bali.jpeg",
+    kategori_event: "Music",
+    creator: {
+      nama_brand: "Java Festival Production",
+      kontak: "+62 812-3456-7890",
+    },
+    tipe_tikets: [
+      {
+        tiket_type_id: "regular",
+        nama: "Regular Pass",
+        harga: 850000,
+        jumlah_tersedia: 500,
+        deskripsi: "Access to all stages for one day of your choice",
+      },
+      {
+        tiket_type_id: "vip",
+        nama: "Special VIP",
+        harga: 1250000,
+        jumlah_tersedia: 200,
+        deskripsi:
+          "Access to all stages for one day plus exclusive lounge access",
+      },
+      {
+        tiket_type_id: "exclusive",
+        nama: "Exclusive",
+        harga: 2100000,
+        jumlah_tersedia: 100,
+        deskripsi: "Access to all stages for all three days",
+      },
     ],
     lineup: [
       { name: "Diana Krall", time: "21:00 - 22:30", day: "Friday, 24 March" },
@@ -75,19 +96,58 @@ export default function EventDetailPage() {
         description: "Access to all stages for all three days",
       },
     ],
+    gallery: ["/image/bali.jpeg", "/image/bali.jpeg", "/image/bali.jpeg"],
+    reviews: [
+      {
+        id: 1,
+        name: "Budi Santoso",
+        rating: 5,
+        date: "March 2024",
+        comment:
+          "Amazing performances and great atmosphere! Will definitely come back next year.",
+      },
+      {
+        id: 2,
+        name: "Anissa Wijaya",
+        rating: 4,
+        date: "March 2024",
+        comment:
+          "Great lineup and organization. Food options could be better though.",
+      },
+    ],
   };
 
+  // Handle scroll events for sticky header
+  useEffect(() => {
+    const handleScroll = () => {
+      const offset = window.scrollY;
+      if (offset > 100) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   // Calculate ticket price based on selected ticket type and quantity
-  const selectedTicket = event.ticketTypes.find(
-    (t) => t.id === selectedTicketType
+  const selectedTicket = event.tipe_tikets.find(
+    (t) => t.tiket_type_id === selectedTicketType
   );
   const totalPrice = selectedTicket
-    ? selectedTicket.priceValue * ticketQuantity
+    ? Number(selectedTicket.harga) * ticketQuantity
     : 0;
   const formattedPrice = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
   }).format(totalPrice);
+
+  // Rest of the component remains the same as the previous implementation
+  // ... (copy the entire previous implementation, replacing event references)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -95,8 +155,8 @@ export default function EventDetailPage() {
       {/* Event Header with Image */}
       <div className="w-full h-[50vh] relative pt-16">
         <Image
-          src={event.image}
-          alt={event.title}
+          src={event.foto_event}
+          alt={event.nama_event}
           fill
           className="object-cover"
         />
@@ -105,14 +165,28 @@ export default function EventDetailPage() {
         <div className="absolute bottom-0 left-0 right-0 p-8 container mx-auto">
           <div className="flex items-center mb-2">
             <span className="bg-indigo-600 text-white text-xs font-bold px-3 py-1 rounded-full mr-3">
-              {event.category}
+              {event.kategori_event}
             </span>
             <span className="text-white/90 text-sm">
-              {event.date} • {event.time}
+              {event.tanggal_mulai.toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              •{" "}
+              {event.tanggal_mulai.toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}{" "}
+              -{" "}
+              {event.tanggal_selesai.toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-            {event.title}
+            {event.nama_event}
           </h1>
           <div className="flex items-center text-white/90 mb-4">
             <svg
@@ -134,11 +208,11 @@ export default function EventDetailPage() {
                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            {event.location}
+            {event.lokasi}
           </div>
           <div className="flex items-center text-white/90">
             <span className="mr-2">Organized by:</span>
-            <span className="font-medium">{event.organizer}</span>
+            <span className="font-medium">{event.creator.nama_brand}</span>
           </div>
         </div>
       </div>
@@ -174,14 +248,10 @@ export default function EventDetailPage() {
               {/* Description Tab */}
               {activeTab === "description" && (
                 <div>
-                  <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                    About This Event
-                  </h2>
+                  <h2 className="text-2xl font-bold mb-4">About This Event</h2>
                   <p className="text-gray-700 mb-6">{event.description}</p>
 
-                  <h3 className="text-xl font-bold mb-3 text-gray-800">
-                    What to Expect
-                  </h3>
+                  <h3 className="text-xl font-bold mb-3">What to Expect</h3>
                   <ul className="space-y-2 mb-6">
                     {event.features.map((feature, index) => (
                       <li key={index} className="flex items-start">
@@ -203,6 +273,22 @@ export default function EventDetailPage() {
                     ))}
                   </ul>
 
+                  <h3 className="text-xl font-bold mb-3">Event Gallery</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    {event.gallery.map((image, index) => (
+                      <div
+                        key={index}
+                        className="relative h-48 rounded-lg overflow-hidden"
+                      >
+                        <Image
+                          src={image}
+                          alt={`Event image ${index + 1}`}
+                          fill
+                          className="object-cover hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -253,12 +339,8 @@ export default function EventDetailPage() {
                     Event Location
                   </h2>
                   <div className="bg-gray-100 p-4 rounded-lg mb-6">
-                    <h3 className="font-bold mb-2 text-gray-800">
-                      {event.location}
-                    </h3>
-                    <p className="text-gray-700 mb-4 text-gray-800">
-                      {event.address}
-                    </p>
+                    <h3 className="font-bold mb-2">{event.location}</h3>
+                    <p className="text-gray-700 mb-4">{event.address}</p>
                     <div className="relative w-full h-64 rounded-lg overflow-hidden">
                       <Image
                         src="/api/placeholder/800/400"
@@ -267,16 +349,14 @@ export default function EventDetailPage() {
                         className="object-cover"
                       />
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="px-4 py-2 bg-white/80 rounded-lg text-sm font-medium text-gray-800">
+                        <span className="px-4 py-2 bg-white/80 rounded-lg text-sm font-medium">
                           Interactive map would be displayed here
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <h3 className="text-xl font-bold mb-3 text-gray-800">
-                    Getting There
-                  </h3>
+                  <h3 className="text-xl font-bold mb-3">Getting There</h3>
                   <div className="space-y-4">
                     <div className="flex items-start">
                       <div className="flex-shrink-0 w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center mr-4">
@@ -295,7 +375,7 @@ export default function EventDetailPage() {
                         </svg>
                       </div>
                       <div>
-                        <h4 className="font-bold mb-1 text-gray-800">
+                        <h4 className="font-bold mb-1">
                           Public Transportation
                         </h4>
                         <p className="text-gray-700">
@@ -324,9 +404,7 @@ export default function EventDetailPage() {
                         </svg>
                       </div>
                       <div>
-                        <h4 className="font-bold mb-1 text-gray-800">
-                          Parking
-                        </h4>
+                        <h4 className="font-bold mb-1">Parking</h4>
                         <p className="text-gray-700">
                           On-site parking available for Rp 25.000 per entry
                         </p>
@@ -347,24 +425,25 @@ export default function EventDetailPage() {
 
               {/* Ticket Type Selection */}
               <div className="space-y-4 mb-6">
-                {event.ticketTypes.map((ticket) => (
+                {event.tipe_tikets.map((ticket) => (
                   <div
-                    key={ticket.id}
-                    onClick={() => setSelectedTicketType(ticket.id)}
+                    key={ticket.tiket_type_id}
+                    onClick={() => setSelectedTicketType(ticket.tiket_type_id)}
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedTicketType === ticket.id
+                      selectedTicketType === ticket.tiket_type_id
                         ? "border-indigo-600 bg-indigo-50"
                         : "border-gray-200 hover:border-indigo-300"
                     }`}
                   >
                     <div className="flex justify-between items-center mb-1">
-                      <h3 className="font-bold text-gray-800">{ticket.name}</h3>
+                      <h3 className="font-bold">{ticket.name}</h3>
                       <span className="font-bold text-indigo-600">
-                        {ticket.price}
+                        Rp{ticket.harga.toLocaleString()}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600">
-                      {ticket.description}
+                    <p className="text-sm text-gray-600">{ticket.deskripsi}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {ticket.jumlah_tersedia} tickets available
                     </p>
                   </div>
                 ))}
@@ -432,7 +511,11 @@ export default function EventDetailPage() {
               <div className="border-t border-gray-200 pt-4 mb-6">
                 <div className="flex justify-between mb-2 text-gray-800">
                   <span className="text-gray-600">Price per ticket</span>
-                  <span>{selectedTicket?.price}</span>
+                  <span>
+                    {selectedTicket
+                      ? `Rp${selectedTicket.harga.toLocaleString()}`
+                      : "-"}
+                  </span>
                 </div>
                 <div className="flex justify-between mb-2 text-gray-800">
                   <span className="text-gray-600">Quantity</span>
@@ -447,7 +530,12 @@ export default function EventDetailPage() {
               {/* Checkout Button */}
               <button
                 onClick={() => setIsCheckoutOpen(true)}
-                className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md"
+                disabled={!selectedTicketType}
+                className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md ${
+                  selectedTicketType
+                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 Buy Tickets
               </button>
@@ -459,8 +547,9 @@ export default function EventDetailPage() {
       {/* Checkout Modal */}
       {isCheckoutOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl">
-            <div className="p-6">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-xl max-h-screen overflow-y-auto p-4">
+            <div className="p-6 flex flex-col">
+              {/* Header */}
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-xl font-bold">Complete Your Purchase</h3>
                 <button
@@ -483,18 +572,32 @@ export default function EventDetailPage() {
                 </button>
               </div>
 
+              {/* Event Details */}
               <div className="mb-6">
-                <h4 className="font-bold mb-2">{event.title}</h4>
+                <h4 className="font-bold mb-2">{event.nama_event}</h4>
                 <div className="text-sm text-gray-600 mb-4">
                   <p>
-                    {event.date} • {event.time}
+                    {event.tanggal_mulai.toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}{" "}
+                    •{" "}
+                    {event.tanggal_mulai.toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}{" "}
+                    -{" "}
+                    {event.tanggal_selesai.toLocaleTimeString("id-ID", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
                   </p>
-                  <p>{event.location}</p>
+                  <p>{event.lokasi}</p>
                 </div>
 
                 <div className="bg-indigo-50 p-4 rounded-lg mb-4">
                   <div className="flex justify-between mb-1">
-                    <span>{selectedTicket?.name}</span>
                     <span>x {ticketQuantity}</span>
                   </div>
                   <div className="flex justify-between font-bold">
@@ -504,6 +607,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
+              {/* Form Input */}
               <div className="space-y-4 mb-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -537,6 +641,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
+              {/* Payment Method */}
               <div className="mb-6">
                 <h4 className="font-medium mb-2">Payment Method</h4>
                 <div className="grid grid-cols-2 gap-3">
@@ -567,6 +672,7 @@ export default function EventDetailPage() {
                 </div>
               </div>
 
+              {/* Checkout Button */}
               <button className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md">
                 Pay Now
               </button>
@@ -663,7 +769,289 @@ export default function EventDetailPage() {
         </div>
       </div>
 
-      <Footer />
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div>
+              <div className="flex items-center mb-6">
+                <svg
+                  className="w-8 h-8 mr-2"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M9 13L12 16L15 13"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M12 8V16"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-xl font-bold">BookIt</span>
+              </div>
+              <p className="text-gray-400 text-sm mb-6">
+                Platform pembelian tiket online terpercaya untuk berbagai event
+                di seluruh Indonesia.
+              </p>
+              <div className="flex space-x-4">
+                <a
+                  href="#"
+                  className="bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center hover:bg-indigo-600 transition-all duration-300"
+                >
+                  <svg
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                  >
+                    <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
+                  </svg>
+                </a>
+                <a
+                  href="#"
+                  className="bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-500 transition-all duration-300"
+                >
+                  <svg
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                  >
+                    <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
+                  </svg>
+                </a>
+                <a
+                  href="#"
+                  className="bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center hover:bg-pink-600 transition-all duration-300"
+                >
+                  <svg
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                    className="w-5 h-5"
+                  >
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-lg mb-4">Bantuan</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    Cara Pembelian
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    Cara Pembayaran
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    FAQ
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    Hubungi Kami
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-lg mb-4">Tentang</h4>
+              <ul className="space-y-3 text-sm text-gray-400">
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    Tentang Kami
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    Karir
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    Kebijakan Privasi
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-indigo-400 transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      className="w-4 h-4 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 5l7 7-7 7"
+                      ></path>
+                    </svg>
+                    Syarat dan Ketentuan
+                  </a>
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-lg mb-4">Ikuti Kami</h4>
+              <p className="text-gray-400 text-sm mb-4">
+                Dapatkan info terbaru tentang event dan promo spesial
+              </p>
+              <div className="flex items-center">
+                <input
+                  type="email"
+                  placeholder="Email Kamu"
+                  className="py-2 px-4 bg-gray-800 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white text-sm flex-grow"
+                />
+                <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-r-lg font-medium text-sm">
+                  Subscribe
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-sm text-gray-400">
+            <p>© 2025 BookIt. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
