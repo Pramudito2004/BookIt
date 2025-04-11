@@ -1,17 +1,18 @@
-// app/api/events/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import { PrismaClient } from '@prisma/client'
 import prisma from '@/lib/prisma'
 import { z } from 'zod'
 
 // Validation Schema (reuse from previous route)
 const EventSchema = z.object({
-  nama_event: z.string().min(1, "Event name is required").optional(),
+  nama_event: z.string().min(1, "Event name is required"),
   deskripsi: z.string().optional(),
-  lokasi: z.string().min(1, "Location is required").optional(),
-  tanggal_mulai: z.string().datetime().optional(),
-  tanggal_selesai: z.string().datetime().optional(),
+  lokasi: z.string().min(1, "Location is required"),
+  tanggal_mulai: z.string().datetime(),
+  tanggal_selesai: z.string().datetime(),
   foto_event: z.string().optional(),
-  kategori_event: z.string().min(1, "Event category is required").optional(),
+  kategori_event: z.string().min(1, "Event category is required"),
+  creator_id: z.string().min(1, "Creator ID is required"),
   tipe_tikets: z.array(z.object({
     tiket_type_id: z.string().optional(),
     nama: z.string().min(1, "Ticket type name is required"),
@@ -19,6 +20,10 @@ const EventSchema = z.object({
     jumlah_tersedia: z.number().int().positive("Available tickets must be positive")
   })).optional()
 })
+
+interface TiketType {
+  tiket_type_id: string;
+}
 
 export async function GET(
   request: NextRequest, 
@@ -51,13 +56,15 @@ export async function PUT(
   try {
     const body = await request.json()
     
+    console.log("Received update data:", JSON.stringify(body, null, 2))
+    
     // Validate input
     const validatedData = EventSchema.parse(body)
 
     // Update event and ticket types
-    const updatedEvent = await prisma.$transaction(async (prisma) => {
+    const result = await prisma.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>) => {
       // First, update the main event
-      const event = await prisma.event.update({
+      const updatedEvent = await tx.event.update({
         where: { event_id: params.id },
         data: {
           nama_event: validatedData.nama_event,
@@ -67,48 +74,72 @@ export async function PUT(
           tanggal_selesai: validatedData.tanggal_selesai,
           foto_event: validatedData.foto_event,
           kategori_event: validatedData.kategori_event
+        },
+        include: {
+          tipe_tikets: true
         }
       })
 
-      // If ticket types are provided, update or create them
-      if (validatedData.tipe_tikets) {
-        // Delete existing ticket types not in the new list
-        await prisma.tipeTiket.deleteMany({
-          where: {
-            event_id: params.id,
-            tiket_type_id: {
-              notIn: validatedData.tipe_tikets
-                .filter(t => t.tiket_type_id)
-                .map(t => t.tiket_type_id!)
-            }
-          }
-        })
-
-        // Upsert ticket types
-        for (const ticketType of validatedData.tipe_tikets) {
-          await prisma.tipeTiket.upsert({
-            where: { 
-              tiket_type_id: ticketType.tiket_type_id || ''
-            },
-            update: {
-              nama: ticketType.nama,
-              harga: ticketType.harga,
-              jumlah_tersedia: ticketType.jumlah_tersedia
-            },
-            create: {
-              event_id: params.id,
-              nama: ticketType.nama,
-              harga: ticketType.harga,
-              jumlah_tersedia: ticketType.jumlah_tersedia
+      // If ticket types are provided, update them
+      if (validatedData.tipe_tikets && validatedData.tipe_tikets.length > 0) {
+        // Get existing ticket type IDs 
+        const existingTicketIds = updatedEvent.tipe_tikets.map((t: TiketType) => t.tiket_type_id)
+        
+        // Get IDs of tickets in the updated data that have IDs
+        const updatedTicketIds = validatedData.tipe_tikets
+          .filter(t => t.tiket_type_id)
+          .map(t => t.tiket_type_id!) 
+        
+        // Find IDs that are in existing but not in updated = tickets to delete
+        const ticketIdsToDelete = existingTicketIds.filter((id: string) => !updatedTicketIds.includes(id))
+        
+        // Delete tickets that are no longer in the list
+        if (ticketIdsToDelete.length > 0) {
+          await tx.tipeTiket.deleteMany({
+            where: {
+              tiket_type_id: {
+                in: ticketIdsToDelete
+              }
             }
           })
         }
+
+        // Process each ticket type
+        for (const ticket of validatedData.tipe_tikets) {
+          if (ticket.tiket_type_id) {
+            // Update existing ticket
+            await tx.tipeTiket.update({
+              where: { tiket_type_id: ticket.tiket_type_id },
+              data: {
+                nama: ticket.nama,
+                harga: ticket.harga,
+                jumlah_tersedia: ticket.jumlah_tersedia
+              }
+            })
+          } else {
+            // Create new ticket
+            await tx.tipeTiket.create({
+              data: {
+                event_id: params.id,
+                nama: ticket.nama,
+                harga: ticket.harga,
+                jumlah_tersedia: ticket.jumlah_tersedia
+              }
+            })
+          }
+        }
       }
 
-      return event
+      // Return updated event with fresh ticket data
+      return await tx.event.findUnique({
+        where: { event_id: params.id },
+        include: {
+          tipe_tikets: true
+        }
+      })
     })
 
-    return NextResponse.json(updatedEvent)
+    return NextResponse.json(result)
   } catch (error) {
     console.error('Error updating event:', error)
     
@@ -128,14 +159,14 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.$transaction(async (prisma) => {
+    await prisma.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>) => {
       // First, delete associated ticket types
-      await prisma.tipeTiket.deleteMany({
+      await tx.tipeTiket.deleteMany({
         where: { event_id: params.id }
       })
 
       // Then delete the event
-      await prisma.event.delete({
+      await tx.event.delete({
         where: { event_id: params.id }
       })
     })
