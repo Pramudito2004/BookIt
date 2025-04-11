@@ -8,8 +8,12 @@ export async function GET(
   try {
     const ticketId = params.id;
     
-    // Ini implementasi sementara
-    // Seharusnya kamu mengambil data ticket dari database
+    // This is a mock implementation. In a real app, you would:
+    // 1. Connect to your database
+    // 2. Query for the ticket with the given ID
+    // 3. Return the ticket data or a 404 if not found
+    
+    // For testing purposes, let's return a mock ticket
     const mockTicket = {
       tiket_id: ticketId,
       tiket_type_id: "type-123",
@@ -25,7 +29,7 @@ export async function GET(
           nama_event: "Concert Event",
           lokasi: "Jakarta Convention Center",
           tanggal_mulai: new Date().toISOString(),
-          tanggal_selesai: new Date(Date.now() + 86400000).toISOString(),
+          tanggal_selesai: new Date(Date.now() + 86400000).toISOString(), // 1 day later
           foto_event: "/api/placeholder/500/300"
         }
       },
