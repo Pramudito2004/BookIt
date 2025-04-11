@@ -36,7 +36,6 @@ interface TicketsData {
 interface UserProfile {
   name: string;
   email: string;
-  phone: string;
   avatar: string;
   ticketsCount: {
     active: number;
@@ -78,7 +77,6 @@ export default function CustomerDashboard() {
   const [userProfile, setUserProfile] = useState<UserProfile>({
     name: "Loading...",
     email: "Loading...",
-    phone: "Loading...",
     avatar: "/api/placeholder/100/100",
     ticketsCount: {
       active: 0,
@@ -448,7 +446,6 @@ useEffect(() => {
                     {userProfile.name}
                   </h1>
                   <p className="text-white/80">{userProfile.email}</p>
-                  <p className="text-white/80">{userProfile.phone}</p>
                 </div>
               </div>
               <div className="flex space-x-4 md:space-x-6">
