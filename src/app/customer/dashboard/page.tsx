@@ -3,9 +3,11 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import useTicketsStore from "@/hooks/useTicketsStore";
+
 // Define ticket type
 interface Ticket {
-  id: number;
+  id: number | string;
   eventTitle: string;
   date: string;
   time: string;
@@ -15,6 +17,7 @@ interface Ticket {
   price: string;
   image: string;
   status: string;
+  eventId?: string;
 }
 
 // Define tickets data structure
@@ -36,6 +39,31 @@ interface UserProfile {
   };
 }
 
+// Define API ticket type
+interface ApiTicket {
+  tiket_id: string;
+  tiket_type_id: string;
+  order_id: string;
+  status: string;
+  kode_qr: string;
+  dibuat_di: string;
+  tipe_tiket: {
+    nama: string;
+    harga: number;
+    event: {
+      event_id: string;
+      nama_event: string;
+      lokasi: string;
+      tanggal_mulai: string;
+      tanggal_selesai: string;
+      foto_event?: string;
+    }
+  };
+  order: {
+    jumlah_total: number;
+    status: string;
+  };
+}
 
 export default function CustomerDashboard() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -46,113 +74,253 @@ export default function CustomerDashboard() {
     phone: "+62 812 3456 7890",
     avatar: "/api/placeholder/100/100",
     ticketsCount: {
-      active: 3,
-      past: 8
+      active: 0,
+      past: 0
     }
   });
+  const [tickets, setTickets] = useState<TicketsData>({
+    active: [],
+    past: []
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for tickets
-  const tickets = {
-    active: [
-      {
-        id: 1,
-        eventTitle: "Java Jazz Festival 2025",
-        date: "24-26 March 2025",
-        time: "18:00 - 23:00",
-        location: "JIExpo Kemayoran, Jakarta",
-        ticketType: "Regular Pass",
-        ticketCode: "JJF-X7A9B2",
-        price: "Rp 850.000",
-        image: "/image/bali.jpeg",
-        status: "Confirmed"
-      },
-      {
-        id: 2,
-        eventTitle: "Indonesia Comic Con 2025",
-        date: "5-6 May 2025",
-        time: "10:00 - 20:00",
-        location: "ICE BSD, Tangerang",
-        ticketType: "Day-1 Pass",
-        ticketCode: "ICC-Y8C2D4",
-        price: "Rp 250.000",
-        image: "/api/placeholder/500/300",
-        status: "Confirmed"
-      },
-      {
-        id: 3,
-        eventTitle: "Bali Spirit Festival",
-        date: "10-14 June 2025",
-        time: "All Day",
-        location: "Ubud, Bali",
-        ticketType: "5-Day Pass",
-        ticketCode: "BSF-Z5E3F7",
-        price: "Rp 1.200.000",
-        image: "/api/placeholder/500/300",
-        status: "Pending"
+  // Get stored tickets from Zustand
+  const { tickets: storedTickets, hasNewTickets, setHasNewTickets } = useTicketsStore();
+
+  // Fetch user tickets
+  useEffect(() => {
+    const fetchUserTickets = async () => {
+      setIsLoading(true);
+      try {
+        // In a real app, you would get the user ID from auth context
+        const userId = "a1b2c3d4-e5f6-7890-1234-56789abcdef0"; // This should come from auth
+        
+        // Fetch tickets from API
+        const response = await fetch(`/api/users/${userId}/tickets`);
+        
+        if (!response.ok) {
+          throw new Error("Failed to fetch tickets");
+        }
+        
+        const data = await response.json();
+        
+        // Process the tickets data
+        processTickets(data.tickets);
+      } catch (err) {
+        console.error("Error fetching tickets:", err);
+        
+        // Check if we have locally stored tickets
+        if (storedTickets.length > 0) {
+          // Process the stored tickets
+          processStoredTickets(storedTickets);
+        } else {
+          setError("Failed to load your tickets");
+          
+          // Fallback to mock data if API fails
+          setTickets({
+            active: mockActiveTickets,
+            past: mockPastTickets
+          });
+          
+          setUserProfile(prev => ({
+            ...prev,
+            ticketsCount: {
+              active: mockActiveTickets.length,
+              past: mockPastTickets.length
+            }
+          }));
+        }
+      } finally {
+        setIsLoading(false);
       }
-    ],
-    past: [
-      {
-        id: 4,
-        eventTitle: "Java Jazz Festival 2024",
-        date: "24-26 March 2024",
-        time: "18:00 - 23:00",
-        location: "JIExpo Kemayoran, Jakarta",
-        ticketType: "Regular Pass",
-        ticketCode: "JJF-A1B2C3",
-        price: "Rp 800.000",
-        image: "/image/bali.jpeg",
-        status: "Completed"
-      },
-      {
-        id: 5,
-        eventTitle: "Jakarta Food Festival 2024",
-        date: "12-14 January 2024",
-        time: "10:00 - 21:00",
-        location: "Senayan City, Jakarta",
-        ticketType: "Weekend Pass",
-        ticketCode: "JFF-D4E5F6",
-        price: "Rp 120.000",
-        image: "/api/placeholder/500/300",
-        status: "Completed"
-      },
-      {
-        id: 6,
-        eventTitle: "Indonesia Comic Con 2024",
-        date: "5-6 May 2024",
-        time: "10:00 - 20:00",
-        location: "ICE BSD, Tangerang",
-        ticketType: "Weekend Pass",
-        ticketCode: "ICC-G7H8I9",
-        price: "Rp 250.000",
-        image: "/api/placeholder/500/300",
-        status: "Completed"
-      },
-      {
-        id: 7,
-        eventTitle: "Music Festival 2024",
-        date: "15 February 2024",
-        time: "18:00 - 23:00",
-        location: "Stadion GBK, Jakarta",
-        ticketType: "VIP Pass",
-        ticketCode: "MF-J1K2L3",
-        price: "Rp 1.500.000",
-        image: "/api/placeholder/500/300",
-        status: "Completed"
-      },
-      {
-        id: 8,
-        eventTitle: "Tech Conference 2023",
-        date: "10-11 November 2023",
-        time: "09:00 - 17:00",
-        location: "Grand Hyatt, Jakarta",
-        ticketType: "2-Day Pass",
-        ticketCode: "TC-M4N5P6",
-        price: "Rp 350.000",
-        image: "/api/placeholder/500/300",
-        status: "Completed"
+    };
+    
+    fetchUserTickets();
+    
+    // Reset the new tickets flag
+    if (hasNewTickets) {
+      setHasNewTickets(false);
+    }
+  }, [storedTickets, hasNewTickets, setHasNewTickets]);
+  
+  // Process stored tickets from Zustand store
+  const processStoredTickets = (storedTickets: any[]) => {
+    const now = new Date();
+    const active: Ticket[] = [];
+    const past: Ticket[] = [];
+    
+    storedTickets.forEach(ticket => {
+      // Parse date string from the ticket to determine if it's past or active
+      const eventDateParts = ticket.date.split(' ');
+      const monthIdx = ["January", "February", "March", "April", "May", "June", 
+                        "July", "August", "September", "October", "November", "December"]
+                        .findIndex(m => ticket.date.includes(m));
+      
+      // Extract year from date (assuming format like "24-26 March 2025")
+      const yearMatch = ticket.date.match(/\d{4}/);
+      const year = yearMatch ? parseInt(yearMatch[0]) : new Date().getFullYear();
+      
+      // Create a simple date object for comparison
+      // This is an approximation; for a production app, you'd want more robust date parsing
+      const eventEndDate = new Date(year, monthIdx, 28); // Use end of month as a safe default
+      
+      // Create UI ticket from stored ticket
+      const uiTicket: Ticket = {
+        id: ticket.id,
+        eventTitle: ticket.eventTitle,
+        date: ticket.date,
+        time: ticket.time,
+        location: ticket.location,
+        ticketType: ticket.ticketType,
+        ticketCode: ticket.ticketCode,
+        price: ticket.price,
+        image: ticket.image || "/api/placeholder/500/300",
+        status: ticket.status,
+        eventId: ticket.eventId
+      };
+      
+      // Categorize as active or past
+      if (eventEndDate > now && ticket.status !== "Cancelled") {
+        active.push(uiTicket);
+      } else {
+        past.push(uiTicket);
       }
-    ]
+    });
+    
+    // Update state
+    setTickets({ active, past });
+    setUserProfile(prev => ({
+      ...prev,
+      ticketsCount: {
+        active: active.length,
+        past: past.length
+      }
+    }));
+  };
+
+  // Process tickets from API response
+  const processTickets = (apiTickets: ApiTicket[]) => {
+    const now = new Date();
+    const active: Ticket[] = [];
+    const past: Ticket[] = [];
+    
+    apiTickets.forEach(ticket => {
+      const eventEndDate = new Date(ticket.tipe_tiket.event.tanggal_selesai);
+      const eventStartDateObj = new Date(ticket.tipe_tiket.event.tanggal_mulai);
+      const eventEndDateObj = new Date(ticket.tipe_tiket.event.tanggal_selesai);
+      
+      // Format dates
+      const date = formatDateRange(
+        ticket.tipe_tiket.event.tanggal_mulai,
+        ticket.tipe_tiket.event.tanggal_selesai
+      );
+      
+      // Format time
+      const time = formatTimeRange(
+        ticket.tipe_tiket.event.tanggal_mulai,
+        ticket.tipe_tiket.event.tanggal_selesai
+      );
+
+      // Map API ticket to UI ticket
+      const uiTicket: Ticket = {
+        id: ticket.tiket_id,
+        eventTitle: ticket.tipe_tiket.event.nama_event,
+        date: date,
+        time: time,
+        location: ticket.tipe_tiket.event.lokasi,
+        ticketType: ticket.tipe_tiket.nama,
+        ticketCode: ticket.kode_qr,
+        price: `Rp ${ticket.tipe_tiket.harga.toLocaleString()}`,
+        image: ticket.tipe_tiket.event.foto_event || "/api/placeholder/500/300",
+        status: mapStatus(ticket.status),
+        eventId: ticket.tipe_tiket.event.event_id
+      };
+      
+      // Categorize as active or past
+      if (eventEndDate > now && ticket.status !== "CANCELLED") {
+        active.push(uiTicket);
+      } else {
+        past.push(uiTicket);
+      }
+    });
+    
+    // Update state
+    setTickets({ active, past });
+    setUserProfile(prev => ({
+      ...prev,
+      ticketsCount: {
+        active: active.length,
+        past: past.length
+      }
+    }));
+  };
+
+  // Format date range (e.g., "24-26 March 2025")
+  const formatDateRange = (startDateStr: string, endDateStr: string) => {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    
+    const startDay = startDate.getDate();
+    const endDay = endDate.getDate();
+    const month = startDate.toLocaleString('en-US', { month: 'long' });
+    const year = startDate.getFullYear();
+    
+    if (startDate.getMonth() === endDate.getMonth() && startDate.getFullYear() === endDate.getFullYear()) {
+      if (startDay === endDay) {
+        return `${startDay} ${month} ${year}`;
+      } else {
+        return `${startDay}-${endDay} ${month} ${year}`;
+      }
+    } else {
+      const endMonth = endDate.toLocaleString('en-US', { month: 'long' });
+      const endYear = endDate.getFullYear();
+      
+      if (startDate.getFullYear() === endDate.getFullYear()) {
+        return `${startDay} ${month} - ${endDay} ${endMonth} ${year}`;
+      } else {
+        return `${startDay} ${month} ${year} - ${endDay} ${endMonth} ${endYear}`;
+      }
+    }
+  };
+
+  // Format time range (e.g., "18:00 - 23:00")
+  const formatTimeRange = (startDateStr: string, endDateStr: string) => {
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+    
+    const startHours = startDate.getHours().toString().padStart(2, '0');
+    const startMinutes = startDate.getMinutes().toString().padStart(2, '0');
+    const endHours = endDate.getHours().toString().padStart(2, '0');
+    const endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+    
+    // If the event spans multiple days, show "All Day" or return specific format
+    if (startDate.getDate() !== endDate.getDate() || 
+        startDate.getMonth() !== endDate.getMonth() || 
+        startDate.getFullYear() !== endDate.getFullYear()) {
+      // Check if it's a full day event (spans entire day)
+      if (startHours === "00" && startMinutes === "00" && endHours === "23" && endMinutes === "59") {
+        return "All Day";
+      }
+    }
+    
+    return `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
+  };
+
+  // Map API status to UI status
+  const mapStatus = (apiStatus: string) => {
+    switch (apiStatus) {
+      case "BOOKED":
+        return "Confirmed";
+      case "AVAILABLE":
+        return "Pending";
+      case "CANCELLED":
+        return "Cancelled";
+      case "SOLD":
+        return "Completed";
+      default:
+        return "Unknown";
+    }
   };
 
   // Handle scroll events for sticky header
@@ -176,6 +344,109 @@ export default function CustomerDashboard() {
   const getTicketCount = () => {
     return activeTab === "active" ? tickets.active.length : tickets.past.length;
   };
+
+  // Mock data for fallback
+  const mockActiveTickets: Ticket[] = [
+    {
+      id: 1,
+      eventTitle: "Java Jazz Festival 2025",
+      date: "24-26 March 2025",
+      time: "18:00 - 23:00",
+      location: "JIExpo Kemayoran, Jakarta",
+      ticketType: "Regular Pass",
+      ticketCode: "JJF-X7A9B2",
+      price: "Rp 850.000",
+      image: "/image/bali.jpeg",
+      status: "Confirmed"
+    },
+    {
+      id: 2,
+      eventTitle: "Indonesia Comic Con 2025",
+      date: "5-6 May 2025",
+      time: "10:00 - 20:00",
+      location: "ICE BSD, Tangerang",
+      ticketType: "Day-1 Pass",
+      ticketCode: "ICC-Y8C2D4",
+      price: "Rp 250.000",
+      image: "/api/placeholder/500/300",
+      status: "Confirmed"
+    },
+    {
+      id: 3,
+      eventTitle: "Bali Spirit Festival",
+      date: "10-14 June 2025",
+      time: "All Day",
+      location: "Ubud, Bali",
+      ticketType: "5-Day Pass",
+      ticketCode: "BSF-Z5E3F7",
+      price: "Rp 1.200.000",
+      image: "/api/placeholder/500/300",
+      status: "Pending"
+    }
+  ];
+  
+  const mockPastTickets: Ticket[] = [
+    {
+      id: 4,
+      eventTitle: "Java Jazz Festival 2024",
+      date: "24-26 March 2024",
+      time: "18:00 - 23:00",
+      location: "JIExpo Kemayoran, Jakarta",
+      ticketType: "Regular Pass",
+      ticketCode: "JJF-A1B2C3",
+      price: "Rp 800.000",
+      image: "/image/bali.jpeg",
+      status: "Completed"
+    },
+    {
+      id: 5,
+      eventTitle: "Jakarta Food Festival 2024",
+      date: "12-14 January 2024",
+      time: "10:00 - 21:00",
+      location: "Senayan City, Jakarta",
+      ticketType: "Weekend Pass",
+      ticketCode: "JFF-D4E5F6",
+      price: "Rp 120.000",
+      image: "/api/placeholder/500/300",
+      status: "Completed"
+    },
+    {
+      id: 6,
+      eventTitle: "Indonesia Comic Con 2024",
+      date: "5-6 May 2024",
+      time: "10:00 - 20:00",
+      location: "ICE BSD, Tangerang",
+      ticketType: "Weekend Pass",
+      ticketCode: "ICC-G7H8I9",
+      price: "Rp 250.000",
+      image: "/api/placeholder/500/300",
+      status: "Completed"
+    },
+    {
+      id: 7,
+      eventTitle: "Music Festival 2024",
+      date: "15 February 2024",
+      time: "18:00 - 23:00",
+      location: "Stadion GBK, Jakarta",
+      ticketType: "VIP Pass",
+      ticketCode: "MF-J1K2L3",
+      price: "Rp 1.500.000",
+      image: "/api/placeholder/500/300",
+      status: "Completed"
+    },
+    {
+      id: 8,
+      eventTitle: "Tech Conference 2023",
+      date: "10-11 November 2023",
+      time: "09:00 - 17:00",
+      location: "Grand Hyatt, Jakarta",
+      ticketType: "2-Day Pass",
+      ticketCode: "TC-M4N5P6",
+      price: "Rp 350.000",
+      image: "/api/placeholder/500/300",
+      status: "Completed"
+    }
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -232,8 +503,8 @@ export default function CustomerDashboard() {
               <nav className="hidden md:flex items-center space-x-1">
                 {[
                   { name: "Events", href: "/ticket", active: false },
-                  { name: "Dashboard", href: "/dashboard", active: true },
-                  { name: "My Tickets", href: "/dashboard", active: false },
+                  { name: "Dashboard", href: "/customer/dashboard", active: true },
+                  { name: "My Tickets", href: "/customer/dashboard", active: false },
                   { name: "Profile", href: "/profile", active: false },
                 ].map((item) => (
                   <Link
@@ -286,7 +557,7 @@ export default function CustomerDashboard() {
                     <Link href="/profile" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
                       My Profile
                     </Link>
-                    <Link href="/dashboard" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
+                    <Link href="/customer/dashboard" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
                       My Tickets
                     </Link>
                     <Link href="/settings" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
@@ -390,6 +661,26 @@ export default function CustomerDashboard() {
 
             {/* Content */}
             <div className="p-6">
+              {/* New Ticket Notification */}
+              {hasNewTickets && activeTab === "active" && (
+                <div className="bg-green-50 border border-green-200 text-green-700 p-4 rounded-lg mb-6 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p>Your tickets have been successfully purchased! They are now available in your dashboard.</p>
+                  </div>
+                  <button 
+                    onClick={() => setHasNewTickets(false)}
+                    className="text-green-700 hover:text-green-900"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-gray-800">
                   {activeTab === "active" ? "My Active Tickets" : "My Past Events"}
@@ -399,224 +690,135 @@ export default function CustomerDashboard() {
                 </div>
               </div>
 
-              {/* Ticket List */}
-              <div className="space-y-6">
-                {tickets[activeTab].map((ticket) => (
-                  <div 
-                    key={ticket.id} 
-                    className="border border-gray-200 rounded-lg overflow-hidden hover:border-indigo-300 hover:shadow-md transition-all duration-200"
-                  >
-                    <div className="flex flex-col md:flex-row">
-                      <div className="md:w-1/4 relative">
-                        <div className="relative h-48 md:h-full w-full">
-                          <Image 
-                            src={ticket.image}
-                            alt={ticket.eventTitle}
-                            fill
-                            className="object-cover"
-                          />
-                          <div className="absolute top-0 left-0 m-2">
-                            <div className={`text-xs font-bold px-2 py-1 rounded ${
-                              ticket.status === "Confirmed" 
-                                ? "bg-green-500 text-white" 
-                                : ticket.status === "Pending" 
-                                ? "bg-yellow-500 text-white"
-                                : "bg-gray-500 text-white"
-                            }`}>
-                              {ticket.status}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="md:w-3/4 p-4 md:p-6 flex flex-col">
-                        <div className="flex-grow">
-                          <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-3">
-                            <h3 className="text-lg font-bold mb-2 md:mb-0">{ticket.eventTitle}</h3>
-                            <div className="text-indigo-600 font-medium">{ticket.price}</div>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-x-4 text-sm">
-                            <div className="flex items-start">
-                              <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              <span>{ticket.date}</span>
-                            </div>
-                            <div className="flex items-start">
-                              <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              <span>{ticket.time}</span>
-                            </div>
-                            <div className="flex items-start">
-                              <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              <span>{ticket.location}</span>
-                            </div>
-                            <div className="flex items-start">
-                              <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                              </svg>
-                              <span>{ticket.ticketType}</span>
-                            </div>
-                          </div>
-                          {activeTab === "active" && (
-                            <div className="mt-4 flex items-center text-sm text-gray-700">
-                              <span className="font-medium mr-2">Ticket Code:</span>
-                              <span className="bg-gray-100 py-1 px-2 rounded font-mono">{ticket.ticketCode}</span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col sm:flex-row justify-end mt-4 pt-4 border-t border-gray-100 gap-3">
-                          {activeTab === "active" ? (
-                            <>
-                              <Link 
-                                href={`/ticket/${ticket.id}`} 
-                                className="text-center py-2 px-4 bg-white border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
-                              >
-                                View Details
-                              </Link>
-                              <Link 
-                                href={`/ticket/view/${ticket.id}`} 
-                                className="text-center py-2 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 text-sm font-medium"
-                              >
-                                View Ticket
-                              </Link>
-                            </>
-                          ) : (
-                            <>
-                              <Link 
-                                href={`/ticket/${ticket.id}`} 
-                                className="text-center py-2 px-4 bg-white border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
-                              >
-                                View Details
-                              </Link>
-                              <button 
-                                className="text-center py-2 px-4 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium"
-                              >
-                                Rate Event
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Empty State */}
-              {getTicketCount() === 0 && (
-                <div className="text-center py-12">
-                  <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-800 mb-2">No tickets found</h3>
-                  <p className="text-gray-600 mb-6">
-                    {activeTab === "active" 
-                      ? "You don't have any active tickets at the moment."
-                      : "You haven't attended any events yet."}
-                  </p>
-                  <Link 
-                    href="/ticket" 
-                    className="inline-block py-2 px-6 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                  >
-                    Browse Events
-                  </Link>
+              {/* Loading State */}
+              {isLoading ? (
+                <div className="flex justify-center items-center py-16">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-indigo-600"></div>
                 </div>
+              ) : (
+                <>
+                  {/* Error State */}
+                  {error && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg mb-6">
+                      <p>{error}</p>
+                    </div>
+                  )}
+
+                  {/* Ticket List */}
+                  <div className="space-y-6">
+                    {tickets[activeTab].map((ticket) => (
+                      <div 
+                        key={ticket.id} 
+                        className="border border-gray-200 rounded-lg overflow-hidden hover:border-indigo-300 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex flex-col md:flex-row">
+                          <div className="md:w-1/4 relative">
+                            <div className="relative h-48 md:h-full w-full">
+                              <Image 
+                                src={ticket.image}
+                                alt={ticket.eventTitle}
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute top-0 left-0 m-2">
+                                <div className={`text-xs font-bold px-2 py-1 rounded ${
+                                  ticket.status === "Confirmed" 
+                                    ? "bg-green-500 text-white" 
+                                    : ticket.status === "Pending" 
+                                    ? "bg-yellow-500 text-white"
+                                    : ticket.status === "Cancelled"
+                                    ? "bg-red-500 text-white"
+                                    : "bg-gray-500 text-white"
+                                }`}>
+                                  {ticket.status}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="md:w-3/4 p-4 md:p-6 flex flex-col">
+                            <div className="flex-grow">
+                              <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-3">
+                                <h3 className="text-lg font-bold mb-2 md:mb-0">{ticket.eventTitle}</h3>
+                                <div className="text-indigo-600 font-medium">{ticket.price}</div>
+                              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-x-4 text-sm">
+                                <div className="flex items-start">
+                                  <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                  </svg>
+                                  <span>{ticket.date}</span>
+                                </div>
+                                <div className="flex items-start">
+                                  <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span>{ticket.time}</span>
+                                </div>
+                                <div className="flex items-start">
+                                  <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                  <span>{ticket.location}</span>
+                                </div>
+                                <div className="flex items-start">
+                                  <svg className="w-4 h-4 mr-2 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+                                  </svg>
+                                  <span>{ticket.ticketType}</span>
+                                </div>
+                              </div>
+                              {activeTab === "active" && (
+                                <div className="mt-4 flex items-center text-sm text-gray-700">
+                                  <span className="font-medium mr-2">Ticket Code:</span>
+                                  <span className="bg-gray-100 py-1 px-2 rounded font-mono">{ticket.ticketCode}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex flex-col sm:flex-row justify-end mt-4 pt-4 border-t border-gray-100 gap-3">
+                              {activeTab === "active" ? (
+                                <>
+                                  <Link 
+                                    href={`/ticket/${ticket.eventId}`} 
+                                    className="text-center py-2 px-4 bg-white border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
+                                  >
+                                    View Details
+                                  </Link>
+                                  <Link 
+                                    href={`/ticket/view/${ticket.id}`} 
+                                    className="text-center py-2 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 text-sm font-medium"
+                                  >
+                                    View Ticket
+                                  </Link>
+                                </>
+                              ) : (
+                                <>
+                                  <Link 
+                                    href={`/ticket/${ticket.eventId}`} 
+                                    className="text-center py-2 px-4 bg-white border border-indigo-600 text-indigo-600 rounded-lg hover:bg-indigo-50 transition-colors text-sm font-medium"
+                                  >
+                                    View Details
+                                  </Link>
+                                  <button 
+                                    className="text-center py-2 px-4 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors text-sm font-medium"
+                                  >
+                                    Rate Event
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
               )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-            <div className="mb-6 md:mb-0">
-              <div className="flex items-center mb-3">
-                <svg
-                  className="w-7 h-7 mr-2"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M9 13L12 16L15 13"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M12 8V16"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span className="text-xl font-bold">BookIt</span>
-              </div>
-              <p className="text-gray-400 text-sm max-w-md">
-                The best event ticketing platform for all your entertainment needs
-              </p>
-            </div>
-            <div className="flex space-x-4">
-              <a
-                href="#"
-                className="bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center hover:bg-indigo-600 transition-all duration-300"
-              >
-                <svg
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5"
-                >
-                  <path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center hover:bg-blue-500 transition-all duration-300"
-              >
-                <svg
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5"
-                >
-                  <path d="M24 4.557c-.883.392-1.832.656-2.828.775 1.017-.609 1.798-1.574 2.165-2.724-.951.564-2.005.974-3.127 1.195-.897-.957-2.178-1.555-3.594-1.555-3.179 0-5.515 2.966-4.797 6.045-4.091-.205-7.719-2.165-10.148-5.144-1.29 2.213-.669 5.108 1.523 6.574-.806-.026-1.566-.247-2.229-.616-.054 2.281 1.581 4.415 3.949 4.89-.693.188-1.452.232-2.224.084.626 1.956 2.444 3.379 4.6 3.419-2.07 1.623-4.678 2.348-7.29 2.04 2.179 1.397 4.768 2.212 7.548 2.212 9.142 0 14.307-7.721 13.995-14.646.962-.695 1.797-1.562 2.457-2.549z" />
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="bg-gray-800 w-10 h-10 rounded-full flex items-center justify-center hover:bg-pink-600 transition-all duration-300"
-              >
-                <svg
-                  fill="currentColor"
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5"
-                >
-                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
-                </svg>
-              </a>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-8 pt-6 text-center text-sm text-gray-400">
-            <p>© 2025 BookIt. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
     </div>
+
   );
 }

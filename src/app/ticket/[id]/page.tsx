@@ -4,90 +4,322 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
+import { format } from "date-fns";
+
+// Define interfaces for our data
+interface TicketType {
+  tiket_type_id: string;
+  nama: string;
+  harga: number;
+  jumlah_tersedia: number;
+  deskripsi?: string;
+}
+
+interface Creator {
+  nama_brand: string;
+  kontak: string;
+}
+
+interface Event {
+  event_id: string;
+  nama_event: string;
+  deskripsi: string;
+  lokasi: string;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  foto_event?: string;
+  kategori_event: string;
+  creator?: Creator;
+  creator_id: string;
+  tipe_tikets: TicketType[];
+}
+
+// Define interface for form data
+interface CheckoutFormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  paymentMethod: string;
+}
 
 export default function EventDetailPage() {
   const params = useParams();
-  const eventId = params.id;
+  const router = useRouter();
+  const eventId = params.id as string;
+
+  // State variables
+  const [event, setEvent] = useState<Event | null>(null);
+  const [relatedEvents, setRelatedEvents] = useState<Event[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("description");
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [selectedTicketType, setSelectedTicketType] = useState<string | null>(
     null
   );
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [formData, setFormData] = useState<CheckoutFormData>({
+    fullName: "",
+    email: "",
+    phone: "",
+    paymentMethod: "",
+  });
+  const [formErrors, setFormErrors] = useState<Partial<CheckoutFormData>>({});
+  const [orderSuccess, setOrderSuccess] = useState(false);
+  const [orderData, setOrderData] = useState<any>(null);
 
-  // Mock event data based on Prisma schema
-  const event = {
-    event_id: eventId,
-    nama_event: "Java Jazz Festival 2025",
-    deskripsi:
-      "Java Jazz Festival is one of the biggest jazz festivals in the world, showcasing more than 100 performances on several stages by jazz artists from around the globe. Experience the magic of world-class jazz performances in the heart of Jakarta.",
-    lokasi: "JIExpo Kemayoran, Jakarta",
-    tanggal_mulai: new Date("2025-03-24T18:00:00"),
-    tanggal_selesai: new Date("2025-03-26T23:00:00"),
-    foto_event: "/image/bali.jpeg",
-    kategori_event: "Music",
-    creator: {
-      nama_brand: "Java Festival Production",
-      kontak: "+62 812-3456-7890",
-    },
-    tipe_tikets: [
-      {
-        tiket_type_id: "regular",
-        nama: "Regular Pass",
-        harga: 850000,
-        jumlah_tersedia: 500,
-        deskripsi: "Access to all stages for one day of your choice",
-      },
-      {
-        tiket_type_id: "vip",
-        nama: "Special VIP",
-        harga: 1250000,
-        jumlah_tersedia: 200,
-        deskripsi:
-          "Access to all stages for one day plus exclusive lounge access",
-      },
-      {
-        tiket_type_id: "exclusive",
-        nama: "Exclusive",
-        harga: 2100000,
-        jumlah_tersedia: 100,
-        deskripsi: "Access to all stages for all three days",
-      },
-    ],
-    lineup: [
-      { name: "Diana Krall", time: "21:00 - 22:30", day: "Friday, 24 March" },
-      { name: "John Legend", time: "19:30 - 21:00", day: "Saturday, 25 March" },
-      { name: "Norah Jones", time: "20:00 - 21:30", day: "Sunday, 26 March" },
-      {
-        name: "Joey Alexander",
-        time: "18:00 - 19:00",
-        day: "Friday, 24 March",
-      },
-      {
-        name: "Jamie Cullum",
-        time: "18:30 - 19:30",
-        day: "Saturday, 25 March",
-      },
-    ],
+  // Fetch event data when component mounts
+  useEffect(() => {
+    async function fetchEventData() {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/events/${eventId}`);
+
+        if (!response.ok) {
+          throw new Error("Event not found");
+        }
+
+        const data = await response.json();
+
+        // Process the event data
+        const eventData: Event = {
+          ...data,
+          // Ensure dates are in the correct format
+          tanggal_mulai: new Date(data.tanggal_mulai).toISOString(),
+          tanggal_selesai: new Date(data.tanggal_selesai).toISOString(),
+          // Ensure ticket types have IDs
+          tipe_tikets: (data.tipe_tikets || []).map(
+            (ticket: any, index: number) => ({
+              ...ticket,
+              tiket_type_id: ticket.tiket_type_id || `ticket-${index}`,
+            })
+          ),
+        };
+
+        setEvent(eventData);
+
+        // After getting the event, fetch related events
+        fetchRelatedEvents(eventData.kategori_event);
+      } catch (err) {
+        console.error("Error fetching event:", err);
+        setError("Failed to load event details");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchEventData();
+  }, [eventId]);
+
+  // Fetch related events
+  const fetchRelatedEvents = async (category: string) => {
+    try {
+      // Fetch events with the same category but different ID
+      const response = await fetch(
+        `/api/events?category=${encodeURIComponent(category)}&limit=4`
+      );
+      const data = await response.json();
+
+      // Filter out the current event and limit to 4
+      const filtered = data.events
+        .filter((e: Event) => e.event_id !== eventId)
+        .slice(0, 4);
+
+      setRelatedEvents(filtered);
+    } catch (err) {
+      console.error("Error fetching related events:", err);
+    }
   };
 
   // Calculate ticket price based on selected ticket type and quantity
-  const selectedTicket = event.tipe_tikets.find(
+  const selectedTicket = event?.tipe_tikets.find(
     (t) => t.tiket_type_id === selectedTicketType
   );
+
   const totalPrice = selectedTicket
     ? Number(selectedTicket.harga) * ticketQuantity
     : 0;
+
   const formattedPrice = new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
   }).format(totalPrice);
 
-  // Rest of the component remains the same as the previous implementation
-  // ... (copy the entire previous implementation, replacing event references)
+  // Format dates for display
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return {
+      date: format(date, "dd MMMM yyyy"),
+      time: format(date, "HH:mm"),
+    };
+  };
+
+  // Handle form input changes
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+
+    // Clear error when typing
+    if (formErrors[name as keyof CheckoutFormData]) {
+      setFormErrors({
+        ...formErrors,
+        [name]: undefined,
+      });
+    }
+  };
+
+  // Handle payment method selection
+  const handlePaymentMethodChange = (method: string) => {
+    setFormData({
+      ...formData,
+      paymentMethod: method,
+    });
+
+    // Clear error
+    if (formErrors.paymentMethod) {
+      setFormErrors({
+        ...formErrors,
+        paymentMethod: undefined,
+      });
+    }
+  };
+
+  // Validate form before submission
+  const validateForm = (): boolean => {
+    const errors: Partial<CheckoutFormData> = {};
+
+    if (!formData.fullName.trim()) {
+      errors.fullName = "Full name is required";
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      errors.email = "Email is invalid";
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required";
+    }
+
+    if (!formData.paymentMethod) {
+      errors.paymentMethod = "Please select a payment method";
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle order submission
+  const handleSubmitOrder = async () => {
+    if (!validateForm() || !event || !selectedTicket) {
+      return;
+    }
+
+    setIsProcessing(true);
+
+    try {
+      // In a real application, you would get the user_id from auth context
+      // For this example, we'll use a hardcoded UUID
+      const userId = "a1b2c3d4-e5f6-7890-1234-56789abcdef0"; // This should come from auth
+
+      const orderData = {
+        user_id: userId,
+        event_id: event.event_id,
+        tiket_type_id: selectedTicket.tiket_type_id,
+        quantity: ticketQuantity,
+        jumlah_total: totalPrice,
+        buyer_info: {
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+        },
+        payment_method: formData.paymentMethod,
+      };
+
+      const response = await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to create order");
+      }
+
+      // Order created successfully
+      setOrderData(result.data);
+      setOrderSuccess(true);
+
+      // In a real app, you would redirect to payment gateway here
+      // For this example, we'll just simulate success
+      setTimeout(() => {
+        setIsCheckoutOpen(false);
+        // Redirect to user's tickets or order confirmation page
+        // router.push(`/my-tickets/${result.data.order.order_id}`);
+      }, 3000);
+    } catch (err: any) {
+      console.error("Error creating order:", err);
+      setError(
+        err.message || "Failed to process your order. Please try again."
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="pt-24 flex justify-center items-center h-96">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-indigo-600"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !event) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navbar />
+        <div className="container mx-auto px-4 py-24 text-center">
+          <div className="bg-white p-8 rounded-xl shadow-md max-w-lg mx-auto">
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">
+              Event Not Found
+            </h1>
+            <p className="text-gray-600 mb-6">
+              {error || "We couldn't find the event you're looking for."}
+            </p>
+            <button
+              onClick={() => router.push("/")}
+              className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              Back to Home
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Format dates
+  const startDate = formatDate(event.tanggal_mulai);
+  const endDate = formatDate(event.tanggal_selesai);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -95,7 +327,7 @@ export default function EventDetailPage() {
       {/* Event Header with Image */}
       <div className="w-full h-[50vh] relative pt-16">
         <Image
-          src={event.foto_event}
+          src={event.foto_event || "/placeholder-event.jpg"}
           alt={event.nama_event}
           fill
           className="object-cover"
@@ -108,21 +340,7 @@ export default function EventDetailPage() {
               {event.kategori_event}
             </span>
             <span className="text-white/90 text-sm">
-              {event.tanggal_mulai.toLocaleDateString("id-ID", {
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}{" "}
-              •{" "}
-              {event.tanggal_mulai.toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
-              -{" "}
-              {event.tanggal_selesai.toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {startDate.date} • {startDate.time} - {endDate.time}
             </span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
@@ -150,10 +368,12 @@ export default function EventDetailPage() {
             </svg>
             {event.lokasi}
           </div>
-          <div className="flex items-center text-white/90">
-            <span className="mr-2">Organized by:</span>
-            <span className="font-medium">{event.creator.nama_brand}</span>
-          </div>
+          {event.creator && (
+            <div className="flex items-center text-white/90">
+              <span className="mr-2">Organized by:</span>
+              <span className="font-medium">{event.creator.nama_brand}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -166,7 +386,6 @@ export default function EventDetailPage() {
             <div className="flex border-b border-gray-200 mb-6">
               {[
                 { id: "description", label: "Description" },
-                { id: "lineup", label: "Lineup" },
                 { id: "location", label: "Location" },
               ].map((tab) => (
                 <button
@@ -191,47 +410,9 @@ export default function EventDetailPage() {
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
                     About This Event
                   </h2>
-                  <p className="text-gray-700 mb-6">{event.deskripsi}</p>
-                </div>
-              )}
-
-              {/* Lineup Tab */}
-              {activeTab === "lineup" && (
-                <div>
-                  <h2 className="text-2xl font-bold mb-6 text-gray-800">
-                    Event Lineup
-                  </h2>
-                  <div className="space-y-4">
-                    {event.lineup.map((artist, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col md:flex-row justify-between p-4 border border-gray-200 rounded-lg hover:border-indigo-200 hover:bg-indigo-50 transition-colors"
-                      >
-                        <div>
-                          <h3 className="font-bold text-lg text-gray-800">
-                            {artist.name}
-                          </h3>
-                          <p className="text-gray-600">{artist.day}</p>
-                        </div>
-                        <div className="flex items-center text-indigo-600 font-medium mt-2 md:mt-0">
-                          <svg
-                            className="w-5 h-5 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          {artist.time}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-gray-700 mb-6 whitespace-pre-line">
+                    {event.deskripsi}
+                  </p>
                 </div>
               )}
 
@@ -259,121 +440,140 @@ export default function EventDetailPage() {
               </h2>
 
               {/* Ticket Type Selection */}
-              <div className="space-y-4 mb-6">
-                {event.tipe_tikets.map((ticket) => (
-                  <div
-                    key={ticket.tiket_type_id}
-                    onClick={() => setSelectedTicketType(ticket.tiket_type_id)}
-                    className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                      selectedTicketType === ticket.tiket_type_id
-                        ? "border-indigo-600 bg-indigo-50"
-                        : "border-gray-200 hover:border-indigo-300"
-                    }`}
-                  >
-                    <div className="flex justify-between items-center mb-1">
-                      <h3 className="font-bold text-gray-800">{ticket.nama}</h3>
-                      <span className="font-bold text-indigo-600">
-                        Rp{ticket.harga.toLocaleString()}
-                      </span>
+              {event.tipe_tikets && event.tipe_tikets.length > 0 ? (
+                <div className="space-y-4 mb-6">
+                  {event.tipe_tikets.map((ticket) => (
+                    <div
+                      key={ticket.tiket_type_id}
+                      onClick={() =>
+                        setSelectedTicketType(ticket.tiket_type_id)
+                      }
+                      className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                        selectedTicketType === ticket.tiket_type_id
+                          ? "border-indigo-600 bg-indigo-50"
+                          : "border-gray-200 hover:border-indigo-300"
+                      }`}
+                    >
+                      <div className="flex justify-between items-center mb-1">
+                        <h3 className="font-bold text-gray-800">
+                          {ticket.nama}
+                        </h3>
+                        <span className="font-bold text-indigo-600">
+                          Rp{ticket.harga.toLocaleString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {ticket.deskripsi ||
+                          `${ticket.nama} ticket for ${event.nama_event}`}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {ticket.jumlah_tersedia} tickets available
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-600">{ticket.deskripsi}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {ticket.jumlah_tersedia} tickets available
-                    </p>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                  <p className="text-yellow-700 text-sm">
+                    No tickets are currently available for this event.
+                  </p>
+                </div>
+              )}
 
               {/* Ticket Quantity */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2 ">
-                  Number of Tickets
-                </label>
-                <div className="flex items-center">
-                  <button
-                    onClick={() =>
-                      setTicketQuantity(Math.max(1, ticketQuantity - 1))
-                    }
-                    className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-l-lg border border-gray-300 hover:bg-gray-200 transition-colors"
-                  >
-                    <svg
-                      className="w-5 h-5 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M20 12H4"
+              {event.tipe_tikets && event.tipe_tikets.length > 0 && (
+                <>
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Number of Tickets
+                    </label>
+                    <div className="flex items-center">
+                      <button
+                        onClick={() =>
+                          setTicketQuantity(Math.max(1, ticketQuantity - 1))
+                        }
+                        className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-l-lg border border-gray-300 hover:bg-gray-200 transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5 text-gray-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M20 12H4"
+                          />
+                        </svg>
+                      </button>
+                      <input
+                        type="number"
+                        min="1"
+                        value={ticketQuantity}
+                        onChange={(e) =>
+                          setTicketQuantity(
+                            Math.max(1, parseInt(e.target.value) || 1)
+                          )
+                        }
+                        className="w-16 h-10 text-center border-t border-b text-gray-800 border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
                       />
-                    </svg>
-                  </button>
-                  <input
-                    type="number"
-                    min="1"
-                    value={ticketQuantity}
-                    onChange={(e) =>
-                      setTicketQuantity(
-                        Math.max(1, parseInt(e.target.value) || 1)
-                      )
-                    }
-                    className="w-16 h-10 text-center border-t border-b text-gray-800 border-gray-300 focus:outline-none focus:ring-0 focus:border-gray-300"
-                  />
+                      <button
+                        onClick={() => setTicketQuantity(ticketQuantity + 1)}
+                        className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-r-lg border border-gray-300 hover:bg-gray-200 transition-colors"
+                      >
+                        <svg
+                          className="w-5 h-5 text-gray-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Price Summary */}
+                  <div className="border-t border-gray-200 pt-4 mb-6">
+                    <div className="flex justify-between mb-2 text-gray-800">
+                      <span className="text-gray-600">Price per ticket</span>
+                      <span>
+                        {selectedTicket
+                          ? `Rp${selectedTicket.harga.toLocaleString()}`
+                          : "-"}
+                      </span>
+                    </div>
+                    <div className="flex justify-between mb-2 text-gray-800">
+                      <span className="text-gray-600">Quantity</span>
+                      <span>{ticketQuantity}</span>
+                    </div>
+                    <div className="flex justify-between font-bold text-lg text-gray-800">
+                      <span>Total</span>
+                      <span>{formattedPrice}</span>
+                    </div>
+                  </div>
+
+                  {/* Checkout Button */}
                   <button
-                    onClick={() => setTicketQuantity(ticketQuantity + 1)}
-                    className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-r-lg border border-gray-300 hover:bg-gray-200 transition-colors"
+                    onClick={() => setIsCheckoutOpen(true)}
+                    disabled={!selectedTicketType}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md ${
+                      selectedTicketType
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
                   >
-                    <svg
-                      className="w-5 h-5 text-gray-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                      />
-                    </svg>
+                    Buy Tickets
                   </button>
-                </div>
-              </div>
-
-              {/* Price Summary */}
-              <div className="border-t border-gray-200 pt-4 mb-6">
-                <div className="flex justify-between mb-2 text-gray-800">
-                  <span className="text-gray-600">Price per ticket</span>
-                  <span>
-                    {selectedTicket
-                      ? `Rp${selectedTicket.harga.toLocaleString()}`
-                      : "-"}
-                  </span>
-                </div>
-                <div className="flex justify-between mb-2 text-gray-800">
-                  <span className="text-gray-600">Quantity</span>
-                  <span>{ticketQuantity}</span>
-                </div>
-                <div className="flex justify-between font-bold text-lg text-gray-800">
-                  <span>Total</span>
-                  <span>{formattedPrice}</span>
-                </div>
-              </div>
-
-              {/* Checkout Button */}
-              <button
-                onClick={() => setIsCheckoutOpen(true)}
-                disabled={!selectedTicketType}
-                className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md ${
-                  selectedTicketType
-                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                Buy Tickets
-              </button>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -390,6 +590,7 @@ export default function EventDetailPage() {
                 <button
                   onClick={() => setIsCheckoutOpen(false)}
                   className="text-gray-500 hover:text-gray-700"
+                  disabled={isProcessing}
                 >
                   <svg
                     className="w-6 h-6"
@@ -407,202 +608,210 @@ export default function EventDetailPage() {
                 </button>
               </div>
 
-              {/* Event Details */}
-              <div className="mb-6">
-                <h4 className="font-bold mb-2">{event.nama_event}</h4>
-                <div className="text-sm text-gray-600 mb-4">
-                  <p>
-                    {event.tanggal_mulai.toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })}{" "}
-                    •{" "}
-                    {event.tanggal_mulai.toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}{" "}
-                    -{" "}
-                    {event.tanggal_selesai.toLocaleTimeString("id-ID", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  <p>{event.lokasi}</p>
-                </div>
-
-                <div className="bg-indigo-50 p-4 rounded-lg mb-4">
-                  <div className="flex justify-between mb-1">
-                    <span>x {ticketQuantity}</span>
-                  </div>
-                  <div className="flex justify-between font-bold">
-                    <span>Total</span>
-                    <span>{formattedPrice}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Form Input */}
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter your full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter your email address"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="Enter your phone number"
-                  />
-                </div>
-              </div>
-
-              {/* Payment Method */}
-              <div className="mb-6">
-                <h4 className="font-medium mb-2">Payment Method</h4>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    "Credit Card",
-                    "Bank Transfer",
-                    "E-Wallet",
-                    "Virtual Account",
-                  ].map((method) => (
-                    <div
-                      key={method}
-                      className="flex items-center p-3 border border-gray-200 rounded-lg cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors"
+              {/* Success Message */}
+              {orderSuccess ? (
+                <div className="text-center py-8">
+                  <div className="bg-green-100 text-green-800 p-4 rounded-lg mb-6">
+                    <svg
+                      className="w-16 h-16 mx-auto text-green-600 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <input
-                        type="radio"
-                        name="payment"
-                        id={method.toLowerCase().replace(/\s+/g, "-")}
-                        className="mr-2"
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                       />
-                      <label
-                        htmlFor={method.toLowerCase().replace(/\s+/g, "-")}
-                        className="cursor-pointer"
-                      >
-                        {method}
-                      </label>
-                    </div>
-                  ))}
+                    </svg>
+                    <h4 className="text-xl font-bold mb-2">
+                      Order Successful!
+                    </h4>
+                    <p>Your tickets have been booked successfully.</p>
+                    <p className="mt-2 text-sm">
+                      Order ID: {orderData?.order?.order_id}
+                    </p>
+                    <p className="mt-2 text-sm">
+                      A confirmation email has been sent to your email address.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {/* Event Details */}
+                  <div className="mb-6">
+                    <h4 className="font-bold mb-2">{event.nama_event}</h4>
+                    <div className="text-sm text-gray-600 mb-4">
+                      <p>
+                        {startDate.date} • {startDate.time} - {endDate.time}
+                      </p>
+                      <p>{event.lokasi}</p>
+                    </div>
 
-              {/* Checkout Button */}
-              <button className="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md">
-                Pay Now
-              </button>
+                    <div className="bg-indigo-50 p-4 rounded-lg mb-4">
+                      <div className="flex justify-between mb-1">
+                        <span>
+                          {selectedTicket?.nama} x {ticketQuantity}
+                        </span>
+                      </div>
+                      <div className="flex justify-between font-bold">
+                        <span>Total</span>
+                        <span>{formattedPrice}</span>
+                      </div>
+                    </div>
+                  </div>
 
-              <p className="text-center text-xs text-gray-500 mt-4">
-                By completing this purchase, you agree to our Terms and
-                Conditions.
-              </p>
+                  {/* Form Input */}
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Full Name
+                      </label>
+                      <input
+                        type="text"
+                        name="fullName"
+                        value={formData.fullName}
+                        onChange={handleInputChange}
+                        className={`w-full p-2 border ${
+                          formErrors.fullName
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+                        placeholder="Enter your full name"
+                        disabled={isProcessing}
+                      />
+                      {formErrors.fullName && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.fullName}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className={`w-full p-2 border ${
+                          formErrors.email
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+                        placeholder="Enter your email address"
+                        disabled={isProcessing}
+                      />
+                      {formErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.email}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Phone Number
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        className={`w-full p-2 border ${
+                          formErrors.phone
+                            ? "border-red-500"
+                            : "border-gray-300"
+                        } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
+                        placeholder="Enter your phone number"
+                        disabled={isProcessing}
+                      />
+                      {formErrors.phone && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {formErrors.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Payment Method */}
+                  <div className="mb-6">
+                    <h4 className="font-medium mb-2">Payment Method</h4>
+                    {formErrors.paymentMethod && (
+                      <p className="text-red-500 text-xs mb-2">
+                        {formErrors.paymentMethod}
+                      </p>
+                    )}
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        "Credit Card",
+                        "Bank Transfer",
+                        "E-Wallet",
+                        "Virtual Account",
+                      ].map((method) => (
+                        <div
+                          key={method}
+                          onClick={() =>
+                            !isProcessing && handlePaymentMethodChange(method)
+                          }
+                          className={`flex items-center p-3 border ${
+                            formData.paymentMethod === method
+                              ? "border-indigo-600 bg-indigo-50"
+                              : "border-gray-200"
+                          } rounded-lg cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors ${
+                            isProcessing ? "opacity-70 cursor-not-allowed" : ""
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="payment"
+                            id={method.toLowerCase().replace(/\s+/g, "-")}
+                            checked={formData.paymentMethod === method}
+                            onChange={() => handlePaymentMethodChange(method)}
+                            disabled={isProcessing}
+                            className="mr-2"
+                          />
+                          <label
+                            htmlFor={method.toLowerCase().replace(/\s+/g, "-")}
+                            className="cursor-pointer"
+                          >
+                            {method}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Checkout Button */}
+                  <button
+                    onClick={handleSubmitOrder}
+                    disabled={isProcessing}
+                    className={`w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-medium hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 shadow-md ${
+                      isProcessing ? "opacity-70 cursor-not-allowed" : ""
+                    }`}
+                  >
+                    {isProcessing ? (
+                      <div className="flex items-center justify-center">
+                        <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></div>
+                        Processing...
+                      </div>
+                    ) : (
+                      "Pay Now"
+                    )}
+                  </button>
+
+                  <p className="text-center text-xs text-gray-500 mt-4">
+                    By completing this purchase, you agree to our Terms and
+                    Conditions.
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </div>
       )}
 
-      {/* Related Events */}
-      <div className="bg-gray-50 py-12">
-        <div className="container mx-auto px-4">
-          <h2 className="text-2xl font-bold mb-8 text-gray-800">
-            You Might Also Like
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((item) => (
-              <div
-                key={item}
-                className="bg-white text-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
-              >
-                <div className="relative h-48">
-                  <Image
-                    src="/image/bali.jpeg"
-                    alt="Related event"
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute top-0 left-0 m-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow-md">
-                    Music
-                  </div>
-                </div>
-                <div className="p-4">
-                  <h3 className="font-bold text-lg mb-2 line-clamp-1">
-                    Another Amazing Concert
-                  </h3>
-                  <div className="flex items-center text-gray-600 text-sm mb-2">
-                    <svg
-                      className="w-4 h-4 mr-1 text-indigo-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                    15 April 2025
-                  </div>
-                  <div className="flex items-center text-gray-600 text-sm mb-3">
-                    <svg
-                      className="w-4 h-4 mr-1 text-indigo-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                      />
-                    </svg>
-                    Jakarta
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-indigo-600">
-                      Rp 500.000
-                    </span>
-                    <Link
-                      href={`/ticket/${item}`}
-                      className="text-sm text-indigo-600 font-medium hover:text-indigo-800"
-                    >
-                      View Details
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
       <Footer />
     </div>
   );

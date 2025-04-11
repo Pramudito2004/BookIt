@@ -1,4 +1,3 @@
-// app/admin/events/page.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -50,6 +49,7 @@ export default function AdminEventsPage() {
         if (response.ok) {
           // Refresh the events list
           fetchEvents();
+          alert('Event deleted successfully');
         } else {
           const errorData = await response.json();
           alert(`Failed to delete event: ${errorData.error}`);
@@ -74,69 +74,79 @@ export default function AdminEventsPage() {
       </div>
 
       {isLoading ? (
-        <div className="text-center py-8">Loading events...</div>
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600"></div>
+        </div>
       ) : (
         <>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {events.map((event) => (
-              <div 
-                key={event.event_id} 
-                className="bg-white rounded-xl shadow-md overflow-hidden"
-              >
-                <div className="relative h-48">
-                  <Image 
-                    src={event.foto_event || '/placeholder-event.jpg'} 
-                    alt={event.nama_event}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <div className="p-6">
-                  <h2 className="text-xl font-bold mb-2">{event.nama_event}</h2>
-                  <div className="text-sm text-gray-600 mb-2">
-                    <p>{format(new Date(event.tanggal_mulai), 'PP')} - {format(new Date(event.tanggal_selesai), 'PP')}</p>
-                    <p>{event.lokasi}</p>
+          {events.length === 0 ? (
+            <div className="text-center py-10 bg-white rounded-lg shadow-sm">
+              <p className="text-gray-600">No events found. Create your first event!</p>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {events.map((event) => (
+                <div 
+                  key={event.event_id} 
+                  className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  <div className="relative h-48">
+                    <Image 
+                      src={event.foto_event || '/placeholder-event.jpg'} 
+                      alt={event.nama_event}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
-                  <div className="flex justify-between items-center mt-4">
-                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs">
-                      {event.kategori_event}
-                    </span>
-                    <div className="flex space-x-2">
-                      <Link 
-                        href={`/admin/events/edit/${event.event_id}`}
-                        className="text-blue-600 hover:text-blue-800"
-                      >
-                        Edit
-                      </Link>
-                      <button 
-                        onClick={() => handleDeleteEvent(event.event_id)}
-                        className="text-red-600 hover:text-red-800"
-                      >
-                        Delete
-                      </button>
+                  <div className="p-6">
+                    <h2 className="text-xl font-bold mb-2">{event.nama_event}</h2>
+                    <div className="text-sm text-gray-600 mb-2">
+                      <p>{format(new Date(event.tanggal_mulai), 'PP')} - {format(new Date(event.tanggal_selesai), 'PP')}</p>
+                      <p>{event.lokasi}</p>
+                    </div>
+                    <div className="flex justify-between items-center mt-4">
+                      <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-xs">
+                        {event.kategori_event}
+                      </span>
+                      <div className="flex space-x-3">
+                        <Link 
+                          href={`/admin/events/edit/${event.event_id}`}
+                          className="text-blue-600 hover:text-blue-800 font-medium"
+                        >
+                          Edit
+                        </Link>
+                        <button 
+                          onClick={() => handleDeleteEvent(event.event_id)}
+                          className="text-red-600 hover:text-red-800 font-medium"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {/* Pagination */}
-          <div className="flex justify-center mt-8 space-x-2">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
-              <button
-                key={pageNum}
-                onClick={() => setPage(pageNum)}
-                className={`px-4 py-2 rounded-lg ${
-                  page === pageNum 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-gray-200 text-gray-800'
-                }`}
-              >
-                {pageNum}
-              </button>
-            ))}
-          </div>
+          {totalPages > 1 && (
+            <div className="flex justify-center mt-8 space-x-2">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className={`px-4 py-2 rounded-lg ${
+                    page === pageNum 
+                      ? 'bg-indigo-600 text-white' 
+                      : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              ))}
+            </div>
+          )}
         </>
       )}
     </div>
