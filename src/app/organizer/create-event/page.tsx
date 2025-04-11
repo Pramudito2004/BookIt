@@ -1,26 +1,33 @@
 // app/admin/events/create/page.tsx
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 
 // Use the same validation schema from the backend
 const EventSchema = z.object({
-  nama_event: z.string().min(1, "Event name is required"),
+  nama_event: z.string().min(1, "Nama event diperlukan"),
   deskripsi: z.string().optional(),
-  lokasi: z.string().min(1, "Location is required"),
+  lokasi: z.string().min(1, "Lokasi diperlukan"),
   tanggal_mulai: z.string().transform((val) => new Date(val).toISOString()),
   tanggal_selesai: z.string().transform((val) => new Date(val).toISOString()),
   foto_event: z.string().optional(),
-  kategori_event: z.string().min(1, "Event category is required"),
-  creator_id: z.string().min(1, "Creator ID is required"),
+  kategori_event: z.string().min(1, "Kategori event diperlukan"),
+  creator_id: z.string().min(1, "Creator ID diperlukan"),
   tipe_tikets: z.array(z.object({
-    nama: z.string().min(1, "Ticket type name is required"),
-    harga: z.number().positive("Price must be positive"),
-    jumlah_tersedia: z.number().int().positive("Available tickets must be positive")
+    nama: z.string().min(1, "Nama tipe tiket diperlukan"),
+    harga: z.number().positive("Harga harus positif"),
+    jumlah_tersedia: z.number().int().positive("Jumlah tiket harus positif")
   })).optional()
 });
+
+// Pre-defined event categories
+const eventCategories = [
+  "Konser", "Workshop", "Seminar", "Pameran", 
+  "Festival", "Networking", "Olahraga", "Hiburan", 
+  "Amal", "Lainnya"
+];
 
 export default function CreateEventPage() {
   const router = useRouter();
@@ -36,13 +43,24 @@ export default function CreateEventPage() {
     tipe_tikets: [{ nama: '', harga: 0, jumlah_tersedia: 0 }]
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeStep, setActiveStep] = useState(1);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors(prev => {
+        const newErrors = {...prev};
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
   };
 
   const handleTicketChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
@@ -77,6 +95,7 @@ export default function CreateEventPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     try {
       const parsedData = EventSchema.parse(formData);
@@ -96,191 +115,366 @@ export default function CreateEventPage() {
         // Handle error
         const errorData = await response.json();
         console.error('Error creating event:', errorData);
-        alert('Failed to create event');
+        alert('Gagal membuat event. Silakan periksa formulir dan coba lagi.');
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         // Handle validation errors
         const errorMap: { [key: string]: string } = {};
         error.errors.forEach(err => {
-          errorMap[err.path[0]] = err.message;
+          const path = err.path.join('.');
+          errorMap[path] = err.message;
         });
         setErrors(errorMap);
+        
+        // Scroll to first error
+        const firstErrorField = document.querySelector('.error-field');
+        if (firstErrorField) {
+          firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
       } else {
         console.error('Unexpected error:', error);
+        alert('Terjadi kesalahan yang tidak diharapkan. Silakan coba lagi.');
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  const moveToStep = (step: number) => {
+    setActiveStep(step);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Create New Event</h1>
-      
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8">
-        {/* Basic Event Details */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Event Name</label>
-            <input
-              type="text"
-              name="nama_event"
-              value={formData.nama_event}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.nama_event && <p className="text-red-500 text-sm">{errors.nama_event}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Location</label>
-            <input
-              type="text"
-              name="lokasi"
-              value={formData.lokasi}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.lokasi && <p className="text-red-500 text-sm">{errors.lokasi}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Start Date</label>
-            <input
-              type="datetime-local"
-              name="tanggal_mulai"
-              value={formData.tanggal_mulai}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.tanggal_mulai && <p className="text-red-500 text-sm">{errors.tanggal_mulai}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">End Date</label>
-            <input
-              type="datetime-local"
-              name="tanggal_selesai"
-              value={formData.tanggal_selesai}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.tanggal_selesai && <p className="text-red-500 text-sm">{errors.tanggal_selesai}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Event Category</label>
-            <input
-              type="text"
-              name="kategori_event"
-              value={formData.kategori_event}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.kategori_event && <p className="text-red-500 text-sm">{errors.kategori_event}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Event Image URL</label>
-            <input
-              type="text"
-              name="foto_event"
-              value={formData.foto_event}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="mt-6">
-          <label className="block text-gray-700 font-medium mb-2">Description</label>
-          <textarea
-            name="deskripsi"
-            value={formData.deskripsi}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg"
-            rows={4}
-          />
-        </div>
-
-        {/* Ticket Types */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Ticket Types</h2>
-            <button
-              type="button"
-              onClick={addTicketType}
-              className="bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700"
-            >
-              Add Ticket Type
-            </button>
-          </div>
-
-          {formData.tipe_tikets.map((ticket, index) => (
-            <div key={index} className="grid md:grid-cols-3 gap-4 mb-4 p-4 border rounded-lg">
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">Ticket Name</label>
-                <input
-                  type="text"
-                  name="nama"
-                  value={ticket.nama}
-                  onChange={(e) => handleTicketChange(index, e)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">Price (IDR)</label>
-                <input
-                  type="number"
-                  name="harga"
-                  value={ticket.harga}
-                  onChange={(e) => handleTicketChange(index, e)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">Available Tickets</label>
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    name="jumlah_tersedia"
-                    value={ticket.jumlah_tersedia}
-                    onChange={(e) => handleTicketChange(index, e)}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  />
-                  {formData.tipe_tikets.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeTicketType(index)}
-                      className="ml-2 text-red-600 hover:text-red-800"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Submit Button */}
-        <div className="mt-8 text-right">
+    <div className="min-h-screen bg-gradient-to-r from-purple-600 to-pink-500">
+      {/* Main Content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8 max-w-4xl mx-auto">
+          <h1 className="text-3xl font-bold text-white">Buat Event Baru</h1>
           <button
-            type="submit"
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+            type="button"
+            onClick={() => router.push('/admin/events')}
+            className="bg-white bg-opacity-20 text-black px-4 py-2 rounded-full hover:bg-opacity-30 transition-colors"
           >
-            Create Event
+            Batal
           </button>
         </div>
-      </form>
+        
+        <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8 max-w-4xl mx-auto">
+          {/* Progress steps */}
+          <div className="border-b pb-6 mb-8">
+            <div className="flex justify-between items-center">
+              <div className="flex flex-col items-center" onClick={() => moveToStep(1)} style={{cursor: 'pointer'}}>
+                <div className={`w-8 h-8 rounded-full ${activeStep >= 1 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'} flex items-center justify-center font-bold`}>1</div>
+                <span className={`text-sm font-medium mt-1 ${activeStep >= 1 ? 'text-purple-600' : 'text-gray-600'}`}>Info Dasar</span>
+              </div>
+              <div className={`h-1 w-1/4 ${activeStep >= 2 ? 'bg-purple-600' : 'bg-gray-200'}`}></div>
+              <div className="flex flex-col items-center" onClick={() => moveToStep(2)} style={{cursor: 'pointer'}}>
+                <div className={`w-8 h-8 rounded-full ${activeStep >= 2 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'} flex items-center justify-center font-bold`}>2</div>
+                <span className={`text-sm font-medium mt-1 ${activeStep >= 2 ? 'text-purple-600' : 'text-gray-600'}`}>Tanggal & Lokasi</span>
+              </div>
+              <div className={`h-1 w-1/4 ${activeStep >= 3 ? 'bg-purple-600' : 'bg-gray-200'}`}></div>
+              <div className="flex flex-col items-center" onClick={() => moveToStep(3)} style={{cursor: 'pointer'}}>
+                <div className={`w-8 h-8 rounded-full ${activeStep >= 3 ? 'bg-purple-600 text-white' : 'bg-gray-200 text-gray-600'} flex items-center justify-center font-bold`}>3</div>
+                <span className={`text-sm font-medium mt-1 ${activeStep >= 3 ? 'text-purple-600' : 'text-gray-600'}`}>Tiket</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Basic Event Details */}
+          {activeStep === 1 && (
+            <div className="mb-10">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">Detail Event</h2>
+              
+              <div className="mb-6">
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="nama_event">
+                  Nama Event <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="nama_event"
+                  type="text"
+                  name="nama_event"
+                  value={formData.nama_event}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors ${errors.nama_event ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                  placeholder="Masukkan nama event"
+                  required
+                />
+                {errors.nama_event && (
+                  <p className="text-red-500 text-sm mt-1">{errors.nama_event}</p>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="deskripsi">
+                  Deskripsi
+                </label>
+                <textarea
+                  id="deskripsi"
+                  name="deskripsi"
+                  value={formData.deskripsi}
+                  onChange={handleChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors"
+                  rows={4}
+                  placeholder="Jelaskan detail event yang akan diselenggarakan..."
+                />
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="kategori_event">
+                  Kategori Event <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="kategori_event"
+                  name="kategori_event"
+                  value={formData.kategori_event}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors ${errors.kategori_event ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                  required
+                >
+                  <option value="" disabled>Pilih kategori</option>
+                  {eventCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                {errors.kategori_event && (
+                  <p className="text-red-500 text-sm mt-1">{errors.kategori_event}</p>
+                )}
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="foto_event">
+                  URL Foto Event (opsional)
+                </label>
+                <div className="flex">
+                  <input
+                    id="foto_event"
+                    type="text"
+                    name="foto_event"
+                    value={formData.foto_event}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <p className="text-gray-500 text-sm mt-1">Tambahkan URL ke gambar yang akan mewakili event Anda</p>
+              </div>
+
+              <div className="mt-8 text-center">
+                <button
+                  type="button"
+                  onClick={() => moveToStep(2)}
+                  className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors font-medium"
+                >
+                  Lanjut
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Date and Location */}
+          {activeStep === 2 && (
+            <div className="mb-10">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6">Tanggal & Lokasi</h2>
+              
+              <div className="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2" htmlFor="tanggal_mulai">
+                    Tanggal & Waktu Mulai <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="tanggal_mulai"
+                    type="datetime-local"
+                    name="tanggal_mulai"
+                    value={formData.tanggal_mulai}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors ${errors.tanggal_mulai ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                    required
+                  />
+                  {errors.tanggal_mulai && (
+                    <p className="text-red-500 text-sm mt-1">{errors.tanggal_mulai}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-gray-700 font-medium mb-2" htmlFor="tanggal_selesai">
+                    Tanggal & Waktu Selesai <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="tanggal_selesai"
+                    type="datetime-local"
+                    name="tanggal_selesai"
+                    value={formData.tanggal_selesai}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors ${errors.tanggal_selesai ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                    required
+                  />
+                  {errors.tanggal_selesai && (
+                    <p className="text-red-500 text-sm mt-1">{errors.tanggal_selesai}</p>
+                  )}
+                  <p className="text-gray-500 text-sm mt-1">Tanggal selesai harus setelah tanggal mulai</p>
+                </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-gray-700 font-medium mb-2" htmlFor="lokasi">
+                  Lokasi <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="lokasi"
+                  type="text"
+                  name="lokasi"
+                  value={formData.lokasi}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none transition-colors ${errors.lokasi ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                  placeholder="Nama venue atau alamat event"
+                  required
+                />
+                {errors.lokasi && (
+                  <p className="text-red-500 text-sm mt-1">{errors.lokasi}</p>
+                )}
+              </div>
+
+              <div className="mt-8 flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => moveToStep(1)}
+                  className="bg-gray-200 text-gray-700 px-8 py-3 rounded-full hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Kembali
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveToStep(3)}
+                  className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors font-medium"
+                >
+                  Lanjut
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Section: Ticket Types */}
+          {activeStep === 3 && (
+            <div className="mb-10">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-semibold text-gray-800">Tipe Tiket</h2>
+                <button
+                  type="button"
+                  onClick={addTicketType}
+                  className="bg-purple-600 text-white px-4 py-2 rounded-full hover:bg-purple-700 transition-colors flex items-center"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  Tambah Tipe Tiket
+                </button>
+              </div>
+
+              {formData.tipe_tikets.map((ticket, index) => (
+                <div 
+                  key={index} 
+                  className="mb-6 p-6 border rounded-lg bg-gray-50 hover:bg-white transition-colors"
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-medium text-gray-800">Tipe Tiket #{index + 1}</h3>
+                    {formData.tipe_tikets.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeTicketType(index)}
+                        className="text-red-600 hover:text-red-800 flex items-center"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                        </svg>
+                        Hapus
+                      </button>
+                    )}
+                  </div>
+                  
+                  <div className="grid md:grid-cols-3 gap-6">
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Nama Tiket <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        name="nama"
+                        value={ticket.nama}
+                        onChange={(e) => handleTicketChange(index, e)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                        placeholder="Contoh: Standard, VIP, Early Bird"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Harga (IDR) <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <span className="text-gray-500">Rp</span>
+                        </div>
+                        <input
+                          type="number"
+                          name="harga"
+                          value={ticket.harga}
+                          onChange={(e) => handleTicketChange(index, e)}
+                          className="w-full pl-10 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                          placeholder="0"
+                          min="0"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 font-medium mb-2">
+                        Jumlah Tiket Tersedia <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        name="jumlah_tersedia"
+                        value={ticket.jumlah_tersedia}
+                        onChange={(e) => handleTicketChange(index, e)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                        placeholder="0"
+                        min="1"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <div className="mt-8 flex justify-between">
+                <button
+                  type="button"
+                  onClick={() => moveToStep(2)}
+                  className="bg-gray-200 text-gray-700 px-8 py-3 rounded-full hover:bg-gray-300 transition-colors font-medium"
+                >
+                  Kembali
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`${
+                    isSubmitting ? 'bg-purple-400' : 'bg-purple-600 hover:bg-purple-700'
+                  } text-white px-8 py-3 rounded-full transition-colors font-medium flex items-center`}
+                >
+                  {isSubmitting && (
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
+                  {isSubmitting ? 'Membuat Event...' : 'Buat Event'}
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
     </div>
   );
 }
