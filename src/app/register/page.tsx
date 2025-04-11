@@ -1,21 +1,33 @@
 // src/app/register/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register, isLoading, error, user, clearError } = useAuth();
+  
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      router.push('/');
+    }
+    
+    // Clear any existing errors when the component mounts
+    clearError();
+  }, [user, router, clearError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -23,31 +35,36 @@ export default function RegisterPage() {
       ...prev,
       [name]: value,
     }));
+    
+    // Clear password mismatch error when typing
+    if ((name === 'password' || name === 'confirmPassword') && passwordError) {
+      setPasswordError("");
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
+    
     // Validation
     if (formData.password !== formData.confirmPassword) {
-      setError("Password tidak cocok.");
-      setIsLoading(false);
+      setPasswordError("Password tidak cocok.");
       return;
     }
-
-    // Simulate API call
+    
+    if (!termsAccepted) {
+      alert("Anda harus menyetujui Syarat dan Ketentuan.");
+      return;
+    }
+    
     try {
-      // Here you would normally make an API call to register the user
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await register(formData.name, formData.email, formData.password);
       
-      // For demo purposes, just redirect to login
-      router.push("/login");
+      // Registration successful, redirect to login
+      alert("Pendaftaran berhasil! Silakan login dengan akun Anda.");
+      router.push('/login');
     } catch (err) {
-      setError("Pendaftaran gagal. Silakan coba lagi.");
-    } finally {
-      setIsLoading(false);
+      // Error handling is managed by the AuthContext
+      console.error("Registration error caught:", err);
     }
   };
 
@@ -86,6 +103,12 @@ export default function RegisterPage() {
           {error && (
             <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
               {error}
+            </div>
+          )}
+          
+          {passwordError && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg">
+              {passwordError}
             </div>
           )}
           
@@ -172,6 +195,8 @@ export default function RegisterPage() {
                 name="terms"
                 type="checkbox"
                 required
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-700">

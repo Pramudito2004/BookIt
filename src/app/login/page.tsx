@@ -1,19 +1,33 @@
-// src/app/login/page.tsx
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, isLoading, error, user, clearError } = useAuth();
+  
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      if (user.type === 'creator') {
+        router.push('/admin/events');
+      } else {
+        router.push('/');
+      }
+    }
+    
+    // Clear any existing errors when the component mounts
+    clearError();
+  }, [user, router, clearError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -25,20 +39,14 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    // Simulate API call
+    
     try {
-      // Here you would normally make an API call to authenticate the user
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      await login(formData.email, formData.password);
       
-      // For demo purposes, just redirect to home
-      router.push("/");
+      // Login successful, the user will be redirected by the useEffect
     } catch (err) {
-      setError("Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
+      // Error handling is managed by the AuthContext
+      console.error("Login error caught:", err);
     }
   };
 
@@ -125,6 +133,8 @@ export default function LoginPage() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">

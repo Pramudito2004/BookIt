@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     const validatedData = OrderSchema.parse(body)
 
     // Begin a transaction
-    const result = await prisma.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>) => {
+    const result = await prisma.$transaction(async (tx) => {
       // 1. Check if ticket type exists and has enough availability
       const ticketType = await tx.tipeTiket.findUnique({
         where: { tiket_type_id: validatedData.tiket_type_id }
