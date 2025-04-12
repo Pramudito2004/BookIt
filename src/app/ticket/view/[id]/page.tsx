@@ -65,7 +65,7 @@ export default function TicketViewPage() {
   const params = useParams();
   const router = useRouter();
   const ticketId = params.id as string;
-  
+
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -73,104 +73,74 @@ export default function TicketViewPage() {
 
   useEffect(() => {
     if (!user) {
-      router.push('/login?redirectTo=/ticket/view/' + ticketId);
+      router.push("/login?redirectTo=/ticket/view/" + ticketId);
       return;
     }
 
-    fetchTicket();
+    // Try to get ticket data from search params
+    const searchParams = new URLSearchParams(window.location.search);
+    const ticketDataStr = searchParams.get("ticketData");
+
+    if (ticketDataStr) {
+      try {
+        const parsedTicket = JSON.parse(ticketDataStr);
+        setTicket(parsedTicket);
+        setIsLoading(false);
+      } catch (err) {
+        console.error("Error parsing ticket data:", err);
+        fetchTicket();
+      }
+    } else {
+      fetchTicket();
+    }
   }, [user, ticketId, router]);
 
-// At the top of your ticket view page, add a mock ticket
-const MOCK_TICKET = {
-    tiket_id: "mock-123",
-    tiket_type_id: "type-123",
-    order_id: "order-123",
-    status: "BOOKED",
-    kode_qr: "MOCK-TICKET-123",
-    dibuat_di: new Date().toISOString(),
-    tipe_tiket: {
-      nama: "VIP Pass",
-      harga: 450000,
-      event: {
-        event_id: "event-123",
-        nama_event: "Mock Concert Event",
-        lokasi: "Jakarta Convention Center",
-        tanggal_mulai: new Date().toISOString(),
-        tanggal_selesai: new Date(Date.now() + 86400000).toISOString(), // 1 day later
-        foto_event: "/api/placeholder/500/300"
-      }
-    },
-    order: {
-      jumlah_total: 450000,
-      status: "COMPLETED",
-      buyer_info: {
-        name: "John Doe",
-        email: "john@example.com"
-      },
-      created_at: new Date().toISOString()
-    }
-  };
-  
-  // Modify your fetchTicket function to use mock data
   const fetchTicket = async () => {
     setIsLoading(true);
     try {
-      // For testing - use mock data
-      console.log("Using mock ticket data");
-      setTimeout(() => {
-        processTicket(MOCK_TICKET);
-        setIsLoading(false);
-      }, 1000);
-      
-      // Comment out the real API call until it's working
-      /*
+      // Fetch ticket details from API
       const response = await fetch(`/api/tickets/${ticketId}`);
+
       if (!response.ok) {
         throw new Error("Failed to fetch ticket");
       }
+
       const data = await response.json();
       processTicket(data.ticket);
-      */
     } catch (err) {
       console.error("Error fetching ticket:", err);
       setError("Failed to load ticket details. Please try again later.");
+    } finally {
       setIsLoading(false);
     }
   };
 
   const processTicket = (apiTicket: ApiTicket) => {
-    // Format dates
-    const startDate = new Date(apiTicket.tipe_tiket.event.tanggal_mulai);
-    const endDate = new Date(apiTicket.tipe_tiket.event.tanggal_selesai);
-    
-    const dateFormatted = formatDateRange(
-      apiTicket.tipe_tiket.event.tanggal_mulai,
-      apiTicket.tipe_tiket.event.tanggal_selesai
-    );
-    
-    const timeFormatted = formatTimeRange(
-      apiTicket.tipe_tiket.event.tanggal_mulai,
-      apiTicket.tipe_tiket.event.tanggal_selesai
-    );
-
-    // Create ticket object
+    // Similar to existing method, but use the API ticket data
     const ticketData: Ticket = {
       id: apiTicket.tiket_id,
       eventTitle: apiTicket.tipe_tiket.event.nama_event,
-      date: dateFormatted,
-      time: timeFormatted,
+      date: formatDateRange(
+        apiTicket.tipe_tiket.event.tanggal_mulai,
+        apiTicket.tipe_tiket.event.tanggal_selesai
+      ),
+      time: formatTimeRange(
+        apiTicket.tipe_tiket.event.tanggal_mulai,
+        apiTicket.tipe_tiket.event.tanggal_selesai
+      ),
       location: apiTicket.tipe_tiket.event.lokasi,
       ticketType: apiTicket.tipe_tiket.nama,
-      ticketCode: apiTicket.kode_qr,
+      ticketCode: apiTicket.kode_qr || "",
       price: `Rp ${apiTicket.tipe_tiket.harga.toLocaleString()}`,
-      image: apiTicket.tipe_tiket.event.foto_event || "/placeholder-event.jpg",
+      image:
+        apiTicket.tipe_tiket.event.foto_event || "/api/placeholder/500/300",
       status: mapStatus(apiTicket.status),
       eventId: apiTicket.tipe_tiket.event.event_id,
       buyerName: apiTicket.order.buyer_info?.name || user?.name || "",
       buyerEmail: apiTicket.order.buyer_info?.email || user?.email || "",
-      orderDate: formatDate(apiTicket.order.created_at || apiTicket.dibuat_di)
+      orderDate: formatDate(apiTicket.order.created_at || apiTicket.dibuat_di),
     };
-    
+
     setTicket(ticketData);
   };
 
@@ -178,12 +148,12 @@ const MOCK_TICKET = {
   const formatDateRange = (startDateStr: string, endDateStr: string) => {
     const startDate = new Date(startDateStr);
     const endDate = new Date(endDateStr);
-    
+
     const startDay = startDate.getDate();
     const endDay = endDate.getDate();
     const month = startDate.toLocaleString("en-US", { month: "long" });
     const year = startDate.getFullYear();
-    
+
     if (
       startDate.getMonth() === endDate.getMonth() &&
       startDate.getFullYear() === endDate.getFullYear()
@@ -196,7 +166,7 @@ const MOCK_TICKET = {
     } else {
       const endMonth = endDate.toLocaleString("en-US", { month: "long" });
       const endYear = endDate.getFullYear();
-      
+
       if (startDate.getFullYear() === endDate.getFullYear()) {
         return `${startDay} ${month} - ${endDay} ${endMonth} ${year}`;
       } else {
@@ -208,12 +178,12 @@ const MOCK_TICKET = {
   // Format single date
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return date.toLocaleDateString("en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -221,12 +191,12 @@ const MOCK_TICKET = {
   const formatTimeRange = (startDateStr: string, endDateStr: string) => {
     const startDate = new Date(startDateStr);
     const endDate = new Date(endDateStr);
-    
+
     const startHours = startDate.getHours().toString().padStart(2, "0");
     const startMinutes = startDate.getMinutes().toString().padStart(2, "0");
     const endHours = endDate.getHours().toString().padStart(2, "0");
     const endMinutes = endDate.getMinutes().toString().padStart(2, "0");
-    
+
     // If the event spans multiple days, show "All Day" or return specific format
     if (
       startDate.getDate() !== endDate.getDate() ||
@@ -243,8 +213,43 @@ const MOCK_TICKET = {
         return "All Day";
       }
     }
-    
+
     return `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
+  };
+
+  // Create a structured verification object
+  const createTicketVerificationData = () => {
+    if (!ticket) return "";
+
+    const verificationData = {
+      ticketId: ticket.id, // Unique ticket identifier
+      eventId: ticket.eventId, // Event identifier
+      eventTitle: ticket.eventTitle, // Event name for cross-reference
+      ticketCode: ticket.ticketCode, // Original ticket code
+      buyerName: ticket.buyerName, // Name of ticket holder
+      buyerEmail: ticket.buyerEmail, // Email of ticket holder
+      status: ticket.status, // Current ticket status
+      validationTimestamp: new Date().toISOString(), // Generation timestamp
+      // Add a hash or signature for additional security (in a real-world scenario)
+      // This would typically be generated server-side
+      hash: generateTicketHash(ticket),
+    };
+
+    return JSON.stringify(verificationData);
+  };
+
+  // Simple hash generation function (for demonstration)
+  const generateTicketHash = (ticket: Ticket) => {
+    // In a real-world scenario, this would be a secure server-side generated hash
+    // For now, we'll use a simple deterministic method
+    const baseString = `${ticket.id}-${ticket.eventId}-${ticket.ticketCode}`;
+    let hash = 0;
+    for (let i = 0; i < baseString.length; i++) {
+      const char = baseString.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(16);
   };
 
   // Map API status to UI status
@@ -289,92 +294,98 @@ const MOCK_TICKET = {
   // Function to generate PDF ticket
   const generatePDF = () => {
     if (!ticket) return;
-    
+
     setGenerating(true);
-    
+
     try {
       // Create a new PDF document
       const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a4'
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
       });
-      
+
       // Add background color
       doc.setFillColor(249, 250, 251); // Light gray background
-      doc.rect(0, 0, 210, 297, 'F');
-      
+      doc.rect(0, 0, 210, 297, "F");
+
       // Add header with gradient
       doc.setFillColor(79, 70, 229); // Indigo color
-      doc.rect(0, 0, 210, 40, 'F');
-      
+      doc.rect(0, 0, 210, 40, "F");
+
       // Add title
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(24);
-      doc.text('E-TICKET', 105, 20, { align: 'center' });
+      doc.text("E-TICKET", 105, 20, { align: "center" });
       doc.setFontSize(12);
-      doc.text('BookIt - Your Event Ticketing Platform', 105, 30, { align: 'center' });
-      
+      doc.text("BookIt - Your Event Ticketing Platform", 105, 30, {
+        align: "center",
+      });
+
       // Add event info
       doc.setTextColor(0, 0, 0);
       doc.setFontSize(18);
-      doc.text(ticket.eventTitle, 105, 60, { align: 'center' });
-      
+      doc.text(ticket.eventTitle, 105, 60, { align: "center" });
+
       // Add event details
       doc.setFontSize(12);
       doc.setTextColor(100, 100, 100);
-      doc.text('Date:', 20, 80);
-      doc.text('Time:', 20, 90);
-      doc.text('Location:', 20, 100);
-      doc.text('Ticket Type:', 20, 110);
-      doc.text('Price:', 20, 120);
-      
+      doc.text("Date:", 20, 80);
+      doc.text("Time:", 20, 90);
+      doc.text("Location:", 20, 100);
+      doc.text("Ticket Type:", 20, 110);
+      doc.text("Price:", 20, 120);
+
       doc.setTextColor(0, 0, 0);
       doc.text(ticket.date, 80, 80);
       doc.text(ticket.time, 80, 90);
       doc.text(ticket.location, 80, 100);
       doc.text(ticket.ticketType, 80, 110);
       doc.text(ticket.price, 80, 120);
-      
+
       // Add ticket info
       doc.setDrawColor(220, 220, 220);
       doc.line(20, 130, 190, 130);
-      
+
       doc.setFontSize(14);
       doc.setTextColor(100, 100, 100);
-      doc.text('TICKET INFORMATION', 105, 145, { align: 'center' });
-      
+      doc.text("TICKET INFORMATION", 105, 145, { align: "center" });
+
       doc.setFontSize(12);
-      doc.text('Attendee:', 20, 160);
-      doc.text('Order Date:', 20, 170);
-      doc.text('Status:', 20, 180);
-      doc.text('Ticket Code:', 20, 190);
-      
+      doc.text("Attendee:", 20, 160);
+      doc.text("Order Date:", 20, 170);
+      doc.text("Status:", 20, 180);
+      doc.text("Ticket Code:", 20, 190);
+
       doc.setTextColor(0, 0, 0);
-      doc.text(ticket.buyerName || 'N/A', 80, 160);
-      doc.text(ticket.orderDate || 'N/A', 80, 170);
+      doc.text(ticket.buyerName || "N/A", 80, 160);
+      doc.text(ticket.orderDate || "N/A", 80, 170);
       doc.text(ticket.status, 80, 180);
       doc.text(ticket.ticketCode, 80, 190);
-      
+
       // Generate QR code image URL from SVG
-      const qrCanvas = document.getElementById('ticket-qr-code') as HTMLCanvasElement;
+      const qrCanvas = document.getElementById(
+        "ticket-qr-code"
+      ) as HTMLCanvasElement;
       if (qrCanvas) {
-        const qrImageData = qrCanvas.toDataURL('image/png');
-        
+        const qrImageData = qrCanvas.toDataURL("image/png");
+
         // Add QR code
-        doc.addImage(qrImageData, 'PNG', 65, 200, 80, 80);
-        
+        doc.addImage(qrImageData, "PNG", 65, 200, 80, 80);
+
         // Add QR code caption
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
-        doc.text('Scan this QR code for event entry', 105, 290, { align: 'center' });
+        doc.text("Scan this QR code for event entry", 105, 290, {
+          align: "center",
+        });
       }
-      
+
       // Save the PDF
       doc.save(`ticket-${ticket.id}.pdf`);
     } catch (err) {
-      console.error('Error generating PDF:', err);
-      alert('Failed to generate PDF. Please try again.');
+      console.error("Error generating PDF:", err);
+      alert("Failed to generate PDF. Please try again.");
     } finally {
       setGenerating(false);
     }
@@ -422,7 +433,7 @@ const MOCK_TICKET = {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
+
       <div className="pt-24 pb-16">
         <div className="container mx-auto px-4">
           <div className="mb-6 flex items-center">
@@ -430,32 +441,48 @@ const MOCK_TICKET = {
               href="/customer/dashboard"
               className="text-indigo-600 hover:text-indigo-800 mr-2"
             >
-              <svg className="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              <svg
+                className="w-5 h-5 inline-block"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M10 19l-7-7m0 0l7-7m-7 7h18"
+                />
               </svg>
               <span className="ml-1">Back to Dashboard</span>
             </Link>
           </div>
-          
+
           {/* Ticket Container */}
           <div className="bg-white rounded-xl shadow-md overflow-hidden max-w-4xl mx-auto">
             {/* Ticket Header */}
             <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-6 text-white">
               <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">E-TICKET</h1>
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeClass(ticket.status)}`}>
+                <div
+                  className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeClass(
+                    ticket.status
+                  )}`}
+                >
                   {ticket.status}
                 </div>
               </div>
             </div>
-            
+
             {/* Ticket Content */}
             <div className="p-6">
               <div className="flex flex-col md:flex-row">
                 {/* Left Column - Event Info */}
                 <div className="md:w-2/3 pr-0 md:pr-6">
-                  <h2 className="text-2xl font-bold text-gray-800 mb-4">{ticket.eventTitle}</h2>
-                  
+                  <h2 className="text-2xl font-bold text-gray-800 mb-4">
+                    {ticket.eventTitle}
+                  </h2>
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 md:gap-y-6 mb-6">
                     <div>
                       <p className="text-gray-500 text-sm">Date</p>
@@ -483,26 +510,30 @@ const MOCK_TICKET = {
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">Price</p>
-                      <p className="font-medium text-indigo-600">{ticket.price}</p>
+                      <p className="font-medium text-indigo-600">
+                        {ticket.price}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500 text-sm">Order Date</p>
                       <p className="font-medium">{ticket.orderDate}</p>
                     </div>
                   </div>
-                  
+
                   <div className="mb-4">
                     <p className="text-gray-500 text-sm mb-1">Ticket Code</p>
-                    <p className="bg-gray-100 p-2 rounded-md font-mono text-gray-800">{ticket.ticketCode}</p>
+                    <p className="bg-gray-100 p-2 rounded-md font-mono text-gray-800">
+                      {ticket.ticketCode}
+                    </p>
                   </div>
                 </div>
-                
+
                 {/* Right Column - QR Code */}
                 <div className="md:w-1/3 flex flex-col items-center justify-center mt-6 md:mt-0 pt-6 md:pt-0 border-t md:border-t-0 md:border-l border-gray-200">
                   <div className="bg-white p-3 rounded-lg shadow-md">
                     <QRCodeCanvas
                       id="ticket-qr-code"
-                      value={ticket.ticketCode}
+                      value={createTicketVerificationData()}
                       size={180}
                       level="H"
                       includeMargin={true}
@@ -514,12 +545,13 @@ const MOCK_TICKET = {
                 </div>
               </div>
             </div>
-            
+
             {/* Ticket Footer */}
             <div className="border-t border-gray-200 p-6">
               <div className="flex flex-col sm:flex-row justify-between items-center">
                 <p className="text-sm text-gray-500 mb-4 sm:mb-0">
-                  This ticket is provided by BookIt. For help, contact support@bookit.id
+                  This ticket is provided by BookIt. For help, contact
+                  support@bookit.id
                 </p>
                 <button
                   onClick={generatePDF}
@@ -528,16 +560,41 @@ const MOCK_TICKET = {
                 >
                   {generating ? (
                     <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
                       </svg>
                       Generating...
                     </>
                   ) : (
                     <>
-                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      <svg
+                        className="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
                       </svg>
                       Download PDF
                     </>
@@ -550,7 +607,9 @@ const MOCK_TICKET = {
           {/* Event Details Section */}
           <div className="mt-8 bg-white rounded-xl shadow-md overflow-hidden max-w-4xl mx-auto">
             <div className="p-6">
-              <h3 className="text-xl font-bold text-gray-800 mb-4">Event Details</h3>
+              <h3 className="text-xl font-bold text-gray-800 mb-4">
+                Event Details
+              </h3>
               <div className="relative h-64 mb-6">
                 <Image
                   src={ticket.image}
@@ -569,7 +628,7 @@ const MOCK_TICKET = {
           </div>
         </div>
       </div>
-      
+
       <Footer />
     </div>
   );
