@@ -1,7 +1,6 @@
 // app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import prisma from '@/lib/prisma'
+import prisma from "@/lib/prisma";
 import { z } from 'zod'
 
 // Validation Schema for orders
