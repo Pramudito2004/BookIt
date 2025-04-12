@@ -1,3 +1,4 @@
+// src\app\api\users\[userId]\tickets\route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
