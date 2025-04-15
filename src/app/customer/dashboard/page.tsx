@@ -709,16 +709,6 @@ useEffect(() => {
                                     <span>{ticket.ticketType}</span>
                                   </div>
                                 </div>
-                                {activeTab === "active" && (
-                                  <div className="mt-4 flex items-center text-sm text-gray-700">
-                                    <span className="font-medium mr-2">
-                                      Ticket Code:
-                                    </span>
-                                    <span className="bg-gray-100 py-1 px-2 rounded font-mono">
-                                      {ticket.ticketCode}
-                                    </span>
-                                  </div>
-                                )}
                               </div>
                               <div className="flex flex-col sm:flex-row justify-end mt-4 pt-4 border-t border-gray-100 gap-3">
                                 {activeTab === "active" ? (
