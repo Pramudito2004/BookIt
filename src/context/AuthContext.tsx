@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (name: string, email: string, password: string) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -109,8 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
       }
+
+      // Don't automatically log in after registration
+      return data;
     } catch (err: any) {
-      setError(err.message || 'Pendaftaran gagal. Silakan coba lagi.');
+      setError(err.message || 'Registrasi gagal. Silakan coba lagi.');
       throw err;
     } finally {
       setIsLoading(false);
