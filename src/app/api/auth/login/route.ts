@@ -64,19 +64,16 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production'
     });
 
-    // Determine user type
-    const userType = user.event_creator ? 'creator' : 'customer';
-    const userName = user.pembeli?.nama_pembeli || user.event_creator?.nama_brand || '';
-
     // Return success response
     return NextResponse.json({
       message: 'Login berhasil',
       user: {
         id: user.user_id,
         email: user.email,
-        name: userName,
-        type: userType
+        name: user.event_creator?.nama_brand || user.pembeli?.nama_pembeli,
+        type: user.event_creator ? 'creator' : 'customer'
       },
+      event_creator: user.event_creator,
       token
     });
   } catch (error) {
