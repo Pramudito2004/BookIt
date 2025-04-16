@@ -1,32 +1,58 @@
-// app/admin/events/create/page.tsx
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/context/AuthContext';
+import { useRouter, useParams } from 'next/navigation';
 import { z } from 'zod';
+import Link from 'next/link';
 
-// Use the same validation schema from the backend
+// Use the same validation schema from the backend but with proper date handling
 const EventSchema = z.object({
   nama_event: z.string().min(1, "Event name is required"),
   deskripsi: z.string().optional(),
   lokasi: z.string().min(1, "Location is required"),
-  tanggal_mulai: z.string().transform((val) => new Date(val).toISOString()),
-  tanggal_selesai: z.string().transform((val) => new Date(val).toISOString()),
+  tanggal_mulai: z.string().transform(val => new Date(val).toISOString()),
+  tanggal_selesai: z.string().transform(val => new Date(val).toISOString()),
   foto_event: z.string().optional(),
   kategori_event: z.string().min(1, "Event category is required"),
   creator_id: z.string().min(1, "Creator ID is required"),
   tipe_tikets: z.array(z.object({
+    tiket_type_id: z.string().optional(),
     nama: z.string().min(1, "Ticket type name is required"),
     harga: z.number().positive("Price must be positive"),
     jumlah_tersedia: z.number().int().positive("Available tickets must be positive")
   })).optional()
 });
 
-export default function CreateEventPage() {
+interface Ticket {
+  tiket_type_id?: string;
+  nama: string;
+  harga: number;
+  jumlah_tersedia: number;
+}
+
+interface Event {
+  event_id: string;
+  nama_event: string;
+  deskripsi: string;
+  lokasi: string;
+  tanggal_mulai: string;
+  tanggal_selesai: string;
+  foto_event?: string;
+  kategori_event: string;
+  creator_id: string;
+  tipe_tikets: Ticket[];
+}
+
+export default function EditEventPage() {
   const router = useRouter();
-  const { user } = useAuth();
-  const [formData, setFormData] = useState({
+  const params = useParams();
+  const eventId = params.id as string;
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [formData, setFormData] = useState<Event>({
+    event_id: '',
     nama_event: '',
     deskripsi: '',
     lokasi: '',
@@ -37,37 +63,56 @@ export default function CreateEventPage() {
     creator_id: '',
     tipe_tikets: [{ nama: '', harga: 0, jumlah_tersedia: 0 }]
   });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch event data
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
-
-    const fetchCreatorId = async () => {
+    const fetchEvent = async () => {
+      setIsLoading(true);
       try {
-        const response = await fetch(`/api/users/${user.id}/creator`);
-        const data = await response.json();
-
+        const response = await fetch(`/api/events/${eventId}`);
+        
         if (!response.ok) {
-          throw new Error('Failed to fetch creator information');
+          throw new Error('Failed to fetch event');
         }
-
-        setFormData(prev => ({
-          ...prev,
-          creator_id: data.creator_id
-        }));
-        setIsLoading(false);
+        
+        const eventData = await response.json();
+        
+        // Format dates for datetime-local input
+        const formattedData = {
+          ...eventData,
+          tanggal_mulai: formatDateTimeForInput(eventData.tanggal_mulai),
+          tanggal_selesai: formatDateTimeForInput(eventData.tanggal_selesai),
+        };
+        
+        // Ensure tipe_tikets exists and values are numbers
+        if (!formattedData.tipe_tikets || formattedData.tipe_tikets.length === 0) {
+          formattedData.tipe_tikets = [{ nama: '', harga: 0, jumlah_tersedia: 0 }];
+        } else {
+          // Ensure harga and jumlah_tersedia are numbers
+          formattedData.tipe_tikets = formattedData.tipe_tikets.map((ticket: Ticket) => ({
+            ...ticket,
+            harga: Number(ticket.harga),
+            jumlah_tersedia: Number(ticket.jumlah_tersedia)
+          }));
+        }
+        
+        setFormData(formattedData);
       } catch (error) {
-        console.error('Error fetching creator ID:', error);
-        router.push('/organizer/profile');
+        console.error('Error fetching event:', error);
+        alert('Failed to load event data');
+      } finally {
+        setIsLoading(false);
       }
     };
+    
+    fetchEvent();
+  }, [eventId]);
 
-    fetchCreatorId();
-  }, [user, router]);
+  const formatDateTimeForInput = (dateString: string) => {
+    const date = new Date(dateString);
+    // Format as YYYY-MM-DDThh:mm
+    return date.toISOString().slice(0, 16);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -80,10 +125,17 @@ export default function CreateEventPage() {
   const handleTicketChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const updatedTickets = [...formData.tipe_tikets];
+    
+    // Convert values to correct type
+    const processedValue = name === 'harga' || name === 'jumlah_tersedia' 
+      ? Number(value) // Ensure numerical values
+      : value;
+    
     updatedTickets[index] = {
       ...updatedTickets[index],
-      [name]: name === 'harga' || name === 'jumlah_tersedia' ? Number(value) : value
+      [name]: processedValue
     };
+    
     setFormData(prev => ({
       ...prev,
       tipe_tikets: updatedTickets
@@ -109,51 +161,106 @@ export default function CreateEventPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSaving(true);
+    setErrors({});
     
     try {
-      const parsedData = EventSchema.parse(formData);
+      // Prepare data for submission - ensure all numbers are really numbers
+      const submitData = {
+        nama_event: formData.nama_event,
+        deskripsi: formData.deskripsi || "",
+        lokasi: formData.lokasi,
+        tanggal_mulai: formData.tanggal_mulai,
+        tanggal_selesai: formData.tanggal_selesai,
+        foto_event: formData.foto_event || "",
+        kategori_event: formData.kategori_event,
+        creator_id: formData.creator_id,
+        tipe_tikets: formData.tipe_tikets.map(ticket => ({
+          tiket_type_id: ticket.tiket_type_id,
+          nama: ticket.nama,
+          harga: Number(ticket.harga), // Ensure it's a number
+          jumlah_tersedia: Number(ticket.jumlah_tersedia) // Ensure it's a number
+        }))
+      };
 
-      const response = await fetch('/api/events', {
-        method: 'POST',
+      // Debug output before validation
+      console.log("Pre-validation data:", JSON.stringify(submitData, null, 2));
+      
+      // Check types before validation
+      submitData.tipe_tikets.forEach((ticket, index) => {
+        console.log(`Ticket ${index} harga type:`, typeof ticket.harga);
+        console.log(`Ticket ${index} jumlah_tersedia type:`, typeof ticket.jumlah_tersedia);
+      });
+
+      // Validate data
+      const parsedData = EventSchema.parse(submitData);
+      
+      // Debug output to console after validation
+      console.log("Submitting data:", JSON.stringify(parsedData, null, 2));
+
+      const response = await fetch(`/api/events/${eventId}`, {
+        method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(parsedData)
       });      
 
+      const responseData = await response.json();
+      
       if (response.ok) {
-        // Redirect to event list after successful creation
+        // Show success message
+        alert('Event updated successfully!');
+        // Redirect to events list
         router.push('/organizer/event-saya');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create event');
+        // Handle error
+        console.error('Error updating event:', responseData);
+        alert(`Failed to update event: ${responseData.error || 'Unknown error'}`);
       }
     } catch (error) {
+      console.error('Error in update:', error);
+      
       if (error instanceof z.ZodError) {
+        // Handle validation errors
         const errorMap: { [key: string]: string } = {};
         error.errors.forEach(err => {
-          errorMap[err.path[0]] = err.message;
+          const path = err.path.join('.');
+          errorMap[path] = `${path}: ${err.message}`;
+          console.error(`Validation error at ${path}:`, err);
         });
         setErrors(errorMap);
+        alert(`Validation failed: ${Object.values(errorMap).join(', ')}`);
       } else {
-        console.error('Error creating event:', error);
-        alert(error instanceof Error ? error.message : 'Failed to create event');
+        console.error('Unexpected error:', error);
+        alert('An unexpected error occurred. Please try again.');
       }
+    } finally {
+      setIsSaving(false);
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-indigo-600"></div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center items-center min-h-screen">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600"></div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Create New Event</h1>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-800">Edit Event</h1>
+        <Link 
+          href="/organizer/event-saya" 
+          className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          Back to Events
+        </Link>
+      </div>
       
       <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8">
         {/* Basic Event Details */}
@@ -228,7 +335,7 @@ export default function CreateEventPage() {
             <input
               type="text"
               name="foto_event"
-              value={formData.foto_event}
+              value={formData.foto_event || ''}
               onChange={handleChange}
               className="w-full px-3 py-2 border rounded-lg"
             />
@@ -240,7 +347,7 @@ export default function CreateEventPage() {
           <label className="block text-gray-700 font-medium mb-2">Description</label>
           <textarea
             name="deskripsi"
-            value={formData.deskripsi}
+            value={formData.deskripsi || ''}
             onChange={handleChange}
             className="w-full px-3 py-2 border rounded-lg"
             rows={4}
@@ -283,6 +390,9 @@ export default function CreateEventPage() {
                   className="w-full px-3 py-2 border rounded-lg"
                   required
                 />
+                {errors[`tipe_tikets.${index}.harga`] && (
+                  <p className="text-red-500 text-sm">{errors[`tipe_tikets.${index}.harga`]}</p>
+                )}
               </div>
               <div>
                 <label className="block text-gray-700 font-medium mb-2">Available Tickets</label>
@@ -295,6 +405,9 @@ export default function CreateEventPage() {
                     className="w-full px-3 py-2 border rounded-lg"
                     required
                   />
+                  {errors[`tipe_tikets.${index}.jumlah_tersedia`] && (
+                    <p className="text-red-500 text-sm">{errors[`tipe_tikets.${index}.jumlah_tersedia`]}</p>
+                  )}
                   {formData.tipe_tikets.length > 1 && (
                     <button
                       type="button"
@@ -306,17 +419,41 @@ export default function CreateEventPage() {
                   )}
                 </div>
               </div>
+              {/* Add hidden input for ticket type ID if exists */}
+              {ticket.tiket_type_id && (
+                <input 
+                  type="hidden" 
+                  name="tiket_type_id" 
+                  value={ticket.tiket_type_id} 
+                />
+              )}
             </div>
           ))}
         </div>
 
         {/* Submit Button */}
-        <div className="mt-8 text-right">
+        <div className="mt-8 flex justify-between">
+          <Link
+            href="/organizer/event-saya"
+            className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Cancel
+          </Link>
           <button
             type="submit"
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors"
+            disabled={isSaving}
+            className={`${
+              isSaving ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+            } text-white px-6 py-3 rounded-lg transition-colors flex items-center`}
           >
-            Create Event
+            {isSaving ? (
+              <>
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                Updating...
+              </>
+            ) : (
+              'Update Event'
+            )}
           </button>
         </div>
       </form>

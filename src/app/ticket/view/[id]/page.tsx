@@ -1,4 +1,4 @@
-// src\app\ticket\view\[id]\page.tsx
+// src/app/ticket/view/[id]/page.tsx
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -217,39 +217,9 @@ export default function TicketViewPage() {
     return `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`;
   };
 
-  // Create a structured verification object
+  // Create a structured verification object (now using ticket code directly)
   const createTicketVerificationData = () => {
-    if (!ticket) return "";
-
-    const verificationData = {
-      ticketId: ticket.id, // Unique ticket identifier
-      eventId: ticket.eventId, // Event identifier
-      eventTitle: ticket.eventTitle, // Event name for cross-reference
-      ticketCode: ticket.ticketCode, // Original ticket code
-      buyerName: ticket.buyerName, // Name of ticket holder
-      buyerEmail: ticket.buyerEmail, // Email of ticket holder
-      status: ticket.status, // Current ticket status
-      validationTimestamp: new Date().toISOString(), // Generation timestamp
-      // Add a hash or signature for additional security (in a real-world scenario)
-      // This would typically be generated server-side
-      hash: generateTicketHash(ticket),
-    };
-
-    return JSON.stringify(verificationData);
-  };
-
-  // Simple hash generation function (for demonstration)
-  const generateTicketHash = (ticket: Ticket) => {
-    // In a real-world scenario, this would be a secure server-side generated hash
-    // For now, we'll use a simple deterministic method
-    const baseString = `${ticket.id}-${ticket.eventId}-${ticket.ticketCode}`;
-    let hash = 0;
-    for (let i = 0; i < baseString.length; i++) {
-      const char = baseString.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(16);
+    return ticket?.ticketCode || '';
   };
 
   // Map API status to UI status

@@ -4,11 +4,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
-  event_creator: any;
   id: string;
   email: string;
   name: string;
   type: 'customer' | 'creator';
+  event_creator?: {
+    creator_id: string;
+    nama_brand: string;
+  };
 }
 
 interface AuthContextType {
@@ -72,13 +75,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Login failed');
       }
 
-      // Save token and user data
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      setUser(data.user);
+      // Save user data with event_creator information
+      const userData = {
+        ...data.user,
+        event_creator: data.event_creator
+      };
+
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
     } catch (err: any) {
-      setError(err.message || 'Login gagal. Silakan coba lagi.');
+      setError(err.message || 'Login failed');
       throw err;
     } finally {
       setIsLoading(false);
