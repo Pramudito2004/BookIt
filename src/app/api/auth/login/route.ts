@@ -70,10 +70,13 @@ export async function POST(request: NextRequest) {
       user: {
         id: user.user_id,
         email: user.email,
-        name: user.event_creator?.nama_brand || user.pembeli?.nama_pembeli,
-        type: user.event_creator ? 'creator' : 'customer'
+        name: user.pembeli?.nama_pembeli || user.event_creator?.nama_brand,
+        activeRole: 'customer', // Default role when logging in
+        roles: {
+          customer: !!user.pembeli,
+          creator: !!user.event_creator
+        }
       },
-      event_creator: user.event_creator,
       token
     });
   } catch (error) {
