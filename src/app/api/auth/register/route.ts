@@ -13,11 +13,9 @@ const registerSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    
-    // Validate the request body
     const validatedData = registerSchema.parse(body);
 
-    // Check if user already exists
+    // Check if user exists
     const existingUser = await prisma.user.findUnique({
       where: { email: validatedData.email }
     });
@@ -29,10 +27,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
 
-    // Create new user in transaction
+    // Create all accounts in transaction
     const result = await prisma.$transaction(async (tx) => {
       // Create user
       const newUser = await tx.user.create({
@@ -42,29 +39,30 @@ export async function POST(request: NextRequest) {
         }
       });
 
-      // Create pembeli (buyer) profile
+      // Create pembeli profile
       const pembeli = await tx.pembeli.create({
         data: {
           user_id: newUser.user_id,
           nama_pembeli: validatedData.name,
-          jenis_kelamin: 'LAKI_LAKI', // Default value, should be provided by the form
-          tanggal_lahir: new Date('2000-01-01'), // Default value, should be provided by the form
+          jenis_kelamin: 'LAKI_LAKI',
+          tanggal_lahir: new Date('2000-01-01'),
         }
       });
 
-      return { newUser, pembeli };
+      // Create event creator profile
+      const eventCreator = await tx.eventCreator.create({
+        data: {
+          user_id: newUser.user_id,
+          nama_brand: validatedData.name,
+          deskripsi_creator: '',
+        }
+      });
+
+      return { newUser, pembeli, eventCreator };
     });
 
-    // Return success response without sensitive data
     return NextResponse.json(
-      { 
-        message: 'Pendaftaran berhasil',
-        user: { 
-          id: result.newUser.user_id,
-          email: result.newUser.email,
-          name: result.pembeli.nama_pembeli
-        } 
-      },
+      { message: 'Pendaftaran berhasil' },
       { status: 201 }
     );
   } catch (error) {
