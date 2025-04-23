@@ -43,6 +43,11 @@ interface Event {
   tipe_tikets: Ticket[];
 }
 
+type FileWithPreview = {
+  file: File;
+  preview: string;
+};
+
 export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
@@ -63,6 +68,7 @@ export default function EditEventPage() {
     creator_id: '',
     tipe_tikets: [{ nama: '', harga: 0, jumlah_tersedia: 0 }]
   });
+  const [selectedImage, setSelectedImage] = useState<FileWithPreview | null>(null);
 
   // Fetch event data
   useEffect(() => {
@@ -159,44 +165,71 @@ export default function EditEventPage() {
     }));
   };
 
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        alert('Image size should be less than 2MB');
+        return;
+      }
+
+      const preview = URL.createObjectURL(file);
+      setSelectedImage({ file, preview });
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage.preview);
+      }
+    };
+  }, [selectedImage]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
     setErrors({});
     
     try {
-      // Prepare data for submission - ensure all numbers are really numbers
+      // Handle image upload if there's a new image
+      let imageUrl = formData.foto_event;
+      if (selectedImage) {
+        const imageFormData = new FormData();
+        imageFormData.append('file', selectedImage.file);
+        
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: imageFormData
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const uploadData = await uploadResponse.json();
+        imageUrl = uploadData.url;
+      }
+
+      // Prepare data for submission
       const submitData = {
-        nama_event: formData.nama_event,
-        deskripsi: formData.deskripsi || "",
-        lokasi: formData.lokasi,
-        tanggal_mulai: formData.tanggal_mulai,
-        tanggal_selesai: formData.tanggal_selesai,
-        foto_event: formData.foto_event || "",
-        kategori_event: formData.kategori_event,
-        creator_id: formData.creator_id,
+        ...formData,
+        foto_event: imageUrl,
         tipe_tikets: formData.tipe_tikets.map(ticket => ({
           tiket_type_id: ticket.tiket_type_id,
           nama: ticket.nama,
-          harga: Number(ticket.harga), // Ensure it's a number
-          jumlah_tersedia: Number(ticket.jumlah_tersedia) // Ensure it's a number
+          harga: Number(ticket.harga),
+          jumlah_tersedia: Number(ticket.jumlah_tersedia)
         }))
       };
 
-      // Debug output before validation
-      console.log("Pre-validation data:", JSON.stringify(submitData, null, 2));
-      
-      // Check types before validation
-      submitData.tipe_tikets.forEach((ticket, index) => {
-        console.log(`Ticket ${index} harga type:`, typeof ticket.harga);
-        console.log(`Ticket ${index} jumlah_tersedia type:`, typeof ticket.jumlah_tersedia);
-      });
-
       // Validate data
       const parsedData = EventSchema.parse(submitData);
-      
-      // Debug output to console after validation
-      console.log("Submitting data:", JSON.stringify(parsedData, null, 2));
 
       const response = await fetch(`/api/events/${eventId}`, {
         method: 'PUT',
@@ -209,14 +242,10 @@ export default function EditEventPage() {
       const responseData = await response.json();
       
       if (response.ok) {
-        // Show success message
         alert('Event updated successfully!');
-        // Redirect to events list
         router.push('/organizer/event-saya');
       } else {
-        // Handle error
-        console.error('Error updating event:', responseData);
-        alert(`Failed to update event: ${responseData.error || 'Unknown error'}`);
+        throw new Error(responseData.error || 'Failed to update event');
       }
     } catch (error) {
       console.error('Error in update:', error);
@@ -331,14 +360,49 @@ export default function EditEventPage() {
           </div>
 
           <div>
-            <label className="block text-gray-700 font-medium mb-2">Event Image URL</label>
-            <input
-              type="text"
-              name="foto_event"
-              value={formData.foto_event || ''}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-            />
+            <label className="block text-gray-700 font-medium mb-2">Event Image</label>
+            <div className="flex flex-col items-center space-y-4">
+              {selectedImage ? (
+                <div className="relative w-full h-48 rounded-lg overflow-hidden">
+                  <img
+                    src={selectedImage.preview}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setSelectedImage(null)}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    </svg>
+                  </button>
+                </div>
+              ) : formData.foto_event ? (
+                <div className="relative w-full h-48 rounded-lg overflow-hidden">
+                  <img
+                    src={formData.foto_event}
+                    alt="Current event image"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : null}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageSelect}
+                className="hidden"
+                id="event-image"
+              />
+              <label
+                htmlFor="event-image"
+                className="cursor-pointer bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition-colors"
+              >
+                {selectedImage ? 'Change Image' : formData.foto_event ? 'Change Image' : 'Upload Image'}
+              </label>
+              <p className="text-sm text-gray-500">Recommended size: 1500x500px, Max: 2MB</p>
+            </div>
           </div>
         </div>
 
