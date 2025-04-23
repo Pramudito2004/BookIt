@@ -42,6 +42,22 @@ export default function Navbar() {
     setMobileMenuOpen(false);
   };
 
+  const handleSwitchAccountType = async (type: 'customer' | 'creator') => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const currentUser = JSON.parse(userData);
+      // Update user type
+      const updatedUser = {
+        ...currentUser,
+        type: type
+      };
+      // Save updated user data
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      // Refresh page to update UI
+      window.location.reload();
+    }
+  };
+  
   return (
     <div
       ref={navbarRef}
@@ -119,7 +135,7 @@ export default function Navbar() {
                 </Link>
               )}
               
-              {user && (
+              {user?.type === 'customer' && (
                 <Link
                   href="/customer/dashboard"
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
@@ -155,14 +171,37 @@ export default function Navbar() {
                       <Link href="/profile" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
                         Profil Saya
                       </Link>
-                      <Link href="/customer/dashboard" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
-                        Tiket Saya
-                      </Link>
-                      {user.type === 'creator' && (
+                      
+                      {/* Show appropriate menu based on user type */}
+                      {user.type === 'customer' ? (
+                        <Link href="/customer/dashboard" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
+                          Tiket Saya
+                        </Link>
+                      ) : (
                         <Link href="/organizer" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
                           Kelola Event
                         </Link>
                       )}
+
+                      <div className="border-t border-gray-200 my-1"></div>
+                      
+                      {/* Account switching buttons */}
+                      {user.type === 'customer' ? (
+                        <button
+                          onClick={() => handleSwitchAccountType('creator')}
+                          className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
+                        >
+                          Beralih ke Event Creator
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleSwitchAccountType('customer')}
+                          className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
+                        >
+                          Beralih ke Akun Pembeli
+                        </button>
+                      )}
+
                       <div className="border-t border-gray-200 my-1"></div>
                       <button
                         onClick={handleLogout}
@@ -287,6 +326,50 @@ export default function Navbar() {
                   >
                     Profil Saya
                   </Link>
+
+                  {/* Show appropriate menu based on user type */}
+                  {user.type === 'customer' ? (
+                    <Link
+                      href="/customer/dashboard"
+                      className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Tiket Saya
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/organizer"
+                      className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      Kelola Event
+                    </Link>
+                  )}
+
+                  {/* Account switching buttons */}
+                  <div className="border-t border-white/10 my-2"></div>
+                  {user.type === 'customer' ? (
+                    <button
+                      onClick={() => {
+                        handleSwitchAccountType('creator');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded-lg"
+                    >
+                      Beralih ke Event Creator
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        handleSwitchAccountType('customer');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded-lg"
+                    >
+                      Beralih ke Akun Pembeli
+                    </button>
+                  )}
+
                   <button
                     onClick={handleLogout}
                     className="px-4 py-2 text-left text-white hover:bg-white/10 rounded-lg"
