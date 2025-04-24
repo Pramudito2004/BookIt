@@ -13,7 +13,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Auth context
-  const { user, logout } = useAuth();
+  const { user, logout, setUser } = useAuth();
   const router = useRouter();
 
   // Refs
@@ -46,15 +46,22 @@ export default function Navbar() {
     const userData = localStorage.getItem('user');
     if (userData) {
       const currentUser = JSON.parse(userData);
-      // Update user type
+      
+      // Update user type and authorization role
       const updatedUser = {
         ...currentUser,
-        type: type
+        type: type,
+        activeRole: type // Set active role to match the selected type
       };
-      // Save updated user data
+
+      // Update local storage with new user data
       localStorage.setItem('user', JSON.stringify(updatedUser));
-      // Refresh page to update UI
-      window.location.reload();
+
+      // Set user context data
+      setUser && setUser(updatedUser);
+
+      // Redirect to homepage using window.location for a full page refresh
+      window.location.href = '/';
     }
   };
   
