@@ -48,6 +48,19 @@ type FileWithPreview = {
   preview: string;
 };
 
+// Predefined categories for dropdown
+const EVENT_CATEGORIES = [
+  "Music", "Sports", "Arts", "Food & Beverage", 
+  "Business", "Technology", "Education", "Health",
+  "Fashion", "Lifestyle", "Entertainment", "Travel", "Other"
+];
+
+// Predefined cities for dropdown
+const CITIES = [
+  "Jakarta", "Surabaya", "Bandung", "Yogyakarta", 
+  "Bali", "Medan", "Makassar", "Semarang", "Other"
+];
+
 export default function EditEventPage() {
   const router = useRouter();
   const params = useParams();
@@ -69,6 +82,7 @@ export default function EditEventPage() {
     tipe_tikets: [{ nama: '', harga: 0, jumlah_tersedia: 0 }]
   });
   const [selectedImage, setSelectedImage] = useState<FileWithPreview | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
 
   // Fetch event data
   useEffect(() => {
@@ -120,7 +134,7 @@ export default function EditEventPage() {
     return date.toISOString().slice(0, 16);
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -190,6 +204,14 @@ export default function EditEventPage() {
       }
     };
   }, [selectedImage]);
+
+  const nextStep = () => {
+    setCurrentStep(currentStep + 1);
+  };
+
+  const prevStep = () => {
+    setCurrentStep(currentStep - 1);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,256 +293,388 @@ export default function EditEventPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600"></div>
-        </div>
+      <div className="flex justify-center items-center min-h-screen bg-gradient-to-r from-purple-600 to-pink-500">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-white"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Edit Event</h1>
-        <Link 
-          href="/organizer/event-saya" 
-          className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-        >
-          Back to Events
-        </Link>
-      </div>
-      
-      <form onSubmit={handleSubmit} className="bg-white shadow-md rounded-lg p-8">
-        {/* Basic Event Details */}
-        <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Event Name</label>
-            <input
-              type="text"
-              name="nama_event"
-              value={formData.nama_event}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.nama_event && <p className="text-red-500 text-sm">{errors.nama_event}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Location</label>
-            <input
-              type="text"
-              name="lokasi"
-              value={formData.lokasi}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.lokasi && <p className="text-red-500 text-sm">{errors.lokasi}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Start Date</label>
-            <input
-              type="datetime-local"
-              name="tanggal_mulai"
-              value={formData.tanggal_mulai}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.tanggal_mulai && <p className="text-red-500 text-sm">{errors.tanggal_mulai}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">End Date</label>
-            <input
-              type="datetime-local"
-              name="tanggal_selesai"
-              value={formData.tanggal_selesai}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.tanggal_selesai && <p className="text-red-500 text-sm">{errors.tanggal_selesai}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Event Category</label>
-            <input
-              type="text"
-              name="kategori_event"
-              value={formData.kategori_event}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border rounded-lg"
-              required
-            />
-            {errors.kategori_event && <p className="text-red-500 text-sm">{errors.kategori_event}</p>}
-          </div>
-
-          <div>
-            <label className="block text-gray-700 font-medium mb-2">Event Image</label>
-            <div className="flex flex-col items-center space-y-4">
-              {selectedImage ? (
-                <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                  <img
-                    src={selectedImage.preview}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setSelectedImage(null)}
-                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                    </svg>
-                  </button>
-                </div>
-              ) : formData.foto_event ? (
-                <div className="relative w-full h-48 rounded-lg overflow-hidden">
-                  <img
-                    src={formData.foto_event}
-                    alt="Current event image"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ) : null}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleImageSelect}
-                className="hidden"
-                id="event-image"
-              />
-              <label
-                htmlFor="event-image"
-                className="cursor-pointer bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-100 transition-colors"
-              >
-                {selectedImage ? 'Change Image' : formData.foto_event ? 'Change Image' : 'Upload Image'}
-              </label>
-              <p className="text-sm text-gray-500">Recommended size: 1500x500px, Max: 2MB</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Description */}
-        <div className="mt-6">
-          <label className="block text-gray-700 font-medium mb-2">Description</label>
-          <textarea
-            name="deskripsi"
-            value={formData.deskripsi || ''}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-lg"
-            rows={4}
-          />
-        </div>
-
-        {/* Ticket Types */}
-        <div className="mt-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">Ticket Types</h2>
-            <button
-              type="button"
-              onClick={addTicketType}
-              className="bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700"
-            >
-              Add Ticket Type
-            </button>
-          </div>
-
-          {formData.tipe_tikets.map((ticket, index) => (
-            <div key={index} className="grid md:grid-cols-3 gap-4 mb-4 p-4 border rounded-lg">
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">Ticket Name</label>
-                <input
-                  type="text"
-                  name="nama"
-                  value={ticket.nama}
-                  onChange={(e) => handleTicketChange(index, e)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">Price (IDR)</label>
-                <input
-                  type="number"
-                  name="harga"
-                  value={ticket.harga}
-                  onChange={(e) => handleTicketChange(index, e)}
-                  className="w-full px-3 py-2 border rounded-lg"
-                  required
-                />
-                {errors[`tipe_tikets.${index}.harga`] && (
-                  <p className="text-red-500 text-sm">{errors[`tipe_tikets.${index}.harga`]}</p>
-                )}
-              </div>
-              <div>
-                <label className="block text-gray-700 font-medium mb-2">Available Tickets</label>
-                <div className="flex items-center">
-                  <input
-                    type="number"
-                    name="jumlah_tersedia"
-                    value={ticket.jumlah_tersedia}
-                    onChange={(e) => handleTicketChange(index, e)}
-                    className="w-full px-3 py-2 border rounded-lg"
-                    required
-                  />
-                  {errors[`tipe_tikets.${index}.jumlah_tersedia`] && (
-                    <p className="text-red-500 text-sm">{errors[`tipe_tikets.${index}.jumlah_tersedia`]}</p>
-                  )}
-                  {formData.tipe_tikets.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeTicketType(index)}
-                      className="ml-2 text-red-600 hover:text-red-800"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-              </div>
-              {/* Add hidden input for ticket type ID if exists */}
-              {ticket.tiket_type_id && (
-                <input 
-                  type="hidden" 
-                  name="tiket_type_id" 
-                  value={ticket.tiket_type_id} 
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {/* Submit Button */}
-        <div className="mt-8 flex justify-between">
-          <Link
-            href="/organizer/event-saya"
-            className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
+    <div className="min-h-screen bg-gradient-to-r from-purple-600 to-pink-500 py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-white">Edit Event</h1>
+          <button 
+            onClick={() => router.push('/organizer/event-saya')} 
+            className="bg-white rounded-full px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            Cancel
-          </Link>
-          <button
-            type="submit"
-            disabled={isSaving}
-            className={`${
-              isSaving ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
-            } text-white px-6 py-3 rounded-lg transition-colors flex items-center`}
-          >
-            {isSaving ? (
-              <>
-                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
-                Updating...
-              </>
-            ) : (
-              'Update Event'
-            )}
+            Batal
           </button>
         </div>
-      </form>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-xl shadow-xl p-8">
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-between mb-10">
+            <div className="flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mb-2 ${currentStep === 1 ? 'bg-purple-600' : 'bg-gray-300'}`}>
+                1
+              </div>
+              <span className="text-sm font-medium">Info Dasar</span>
+            </div>
+            
+            {/* Line connector */}
+            <div className="h-1 bg-gray-200 flex-grow mx-4">
+              <div className={`h-full bg-purple-600 transition-all duration-300 ${currentStep >= 2 ? 'w-full' : 'w-0'}`}></div>
+            </div>
+            
+            <div className="flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mb-2 ${currentStep === 2 ? 'bg-purple-600' : 'bg-gray-300'}`}>
+                2
+              </div>
+              <span className="text-sm font-medium">Tanggal & Lokasi</span>
+            </div>
+            
+            {/* Line connector */}
+            <div className="h-1 bg-gray-200 flex-grow mx-4">
+              <div className={`h-full bg-purple-600 transition-all duration-300 ${currentStep >= 3 ? 'w-full' : 'w-0'}`}></div>
+            </div>
+            
+            <div className="flex flex-col items-center">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-medium mb-2 ${currentStep === 3 ? 'bg-purple-600' : 'bg-gray-300'}`}>
+                3
+              </div>
+              <span className="text-sm font-medium">Tiket</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            {/* Step 1: Basic Info */}
+            {currentStep === 1 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">Detail Event</h2>
+                
+                <div className="mb-6">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Nama Event <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="nama_event"
+                    value={formData.nama_event}
+                    onChange={handleChange}
+                    placeholder="Masukkan nama event"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  {errors.nama_event && <p className="text-red-500 text-sm mt-1">{errors.nama_event}</p>}
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Deskripsi
+                  </label>
+                  <textarea
+                    name="deskripsi"
+                    value={formData.deskripsi || ''}
+                    onChange={handleChange}
+                    placeholder="Jelaskan detail event yang akan diselenggarakan..."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    rows={5}
+                  />
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Kategori Event <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="kategori_event"
+                    value={formData.kategori_event}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                    required
+                  >
+                    <option value="">Pilih kategori</option>
+                    {EVENT_CATEGORIES.map((category) => (
+                      <option key={category} value={category}>{category}</option>
+                    ))}
+                  </select>
+                  {errors.kategori_event && <p className="text-red-500 text-sm mt-1">{errors.kategori_event}</p>}
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Foto Event
+                  </label>
+                  <div className="mt-2">
+                    {selectedImage ? (
+                      <div className="relative w-full h-48 rounded-lg overflow-hidden mb-3">
+                        <img
+                          src={selectedImage.preview}
+                          alt="Preview Event"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSelectedImage(null)}
+                          className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600 transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : formData.foto_event ? (
+                      <div className="relative w-full h-48 rounded-lg overflow-hidden mb-3">
+                        <img
+                          src={formData.foto_event}
+                          alt="Current event image"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-full h-48 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center mb-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="mt-2 text-sm text-gray-500">Unggah foto untuk event Anda</p>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center justify-center">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        className="hidden"
+                        id="event-image"
+                      />
+                      <label
+                        htmlFor="event-image"
+                        className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                      >
+                        {selectedImage ? 'Ganti Gambar' : formData.foto_event ? 'Ganti Gambar' : 'Upload Gambar'}
+                      </label>
+                      <p className="text-xs text-gray-500 ml-3">Format: JPG, PNG. Maks: 2MB</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="mt-8 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors font-medium"
+                  >
+                    Lanjut
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Step 2: Date & Location */}
+            {currentStep === 2 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">Tanggal & Lokasi</h2>
+                
+                <div className="mb-6">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Tanggal Mulai <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="tanggal_mulai"
+                    value={formData.tanggal_mulai}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  {errors.tanggal_mulai && <p className="text-red-500 text-sm mt-1">{errors.tanggal_mulai}</p>}
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Tanggal Selesai <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="tanggal_selesai"
+                    value={formData.tanggal_selesai}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    required
+                  />
+                  {errors.tanggal_selesai && <p className="text-red-500 text-sm mt-1">{errors.tanggal_selesai}</p>}
+                </div>
+                
+                <div className="mb-6">
+                  <label className="block text-gray-700 font-medium mb-2">
+                    Lokasi <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="lokasi"
+                    value={formData.lokasi}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
+                    required
+                  >
+                    <option value="">Pilih lokasi</option>
+                    {CITIES.map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                  {errors.lokasi && <p className="text-red-500 text-sm mt-1">{errors.lokasi}</p>}
+                </div>
+                
+                <div className="mt-8 flex justify-between">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="border border-purple-600 text-purple-600 px-6 py-3 rounded-full hover:bg-purple-50 transition-colors font-medium"
+                  >
+                    Kembali
+                  </button>
+                  <button
+                    type="button"
+                    onClick={nextStep}
+                    className="bg-purple-600 text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors font-medium"
+                  >
+                    Lanjut
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Step 3: Tickets */}
+            {currentStep === 3 && (
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">Tiket</h2>
+                
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium text-gray-700">Jenis Tiket</h3>
+                    <button
+                      type="button"
+                      onClick={addTicketType}
+                      className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+                    >
+                      + Tambah Jenis Tiket
+                    </button>
+                  </div>
+                  
+                  {formData.tipe_tikets.map((ticket, index) => (
+                    <div key={index} className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-4">
+                      <div className="mb-4">
+                        <label className="block text-gray-700 font-medium mb-2">
+                          Nama Tiket <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="nama"
+                          value={ticket.nama}
+                          onChange={(e) => handleTicketChange(index, e)}
+                          placeholder="Mis. VIP, Regular, Early Bird"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-gray-700 font-medium mb-2">
+                            Harga (IDR) <span className="text-red-500">*</span>
+                          </label>
+                          <input
+                            type="number"
+                            name="harga"
+                            value={ticket.harga}
+                            onChange={(e) => handleTicketChange(index, e)}
+                            placeholder="0"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            required
+                          />
+                          {errors[`tipe_tikets.${index}.harga`] && (
+                            <p className="text-red-500 text-sm mt-1">{errors[`tipe_tikets.${index}.harga`]}</p>
+                          )}
+                        </div>
+                        
+                        <div>
+                          <label className="block text-gray-700 font-medium mb-2">
+                            Jumlah Tersedia <span className="text-red-500">*</span>
+                          </label>
+                          <div className="flex items-center">
+                            <input
+                              type="number"
+                              name="jumlah_tersedia"
+                              value={ticket.jumlah_tersedia}
+                              onChange={(e) => handleTicketChange(index, e)}
+                              placeholder="0"
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              required
+                            />
+                            {errors[`tipe_tikets.${index}.jumlah_tersedia`] && (
+                              <p className="text-red-500 text-sm mt-1">{errors[`tipe_tikets.${index}.jumlah_tersedia`]}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Add hidden input for ticket type ID if exists */}
+                      {ticket.tiket_type_id && (
+                        <input 
+                          type="hidden" 
+                          name="tiket_type_id" 
+                          value={ticket.tiket_type_id} 
+                        />
+                      )}
+                      
+                      {formData.tipe_tikets.length > 1 && (
+                        <div className="mt-4 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => removeTicketType(index)}
+                            className="text-red-500 hover:text-red-700 transition-colors text-sm font-medium"
+                          >
+                            Hapus Tiket
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="mt-8 flex justify-between">
+                  <button
+                    type="button"
+                    onClick={prevStep}
+                    className="border border-purple-600 text-purple-600 px-6 py-3 rounded-full hover:bg-purple-50 transition-colors font-medium"
+                  >
+                    Kembali
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSaving}
+                    className={`${
+                      isSaving ? 'bg-purple-400' : 'bg-purple-600 hover:bg-purple-700'
+                    } text-white px-8 py-3 rounded-full transition-colors font-medium`}
+                  >
+                    {isSaving ? (
+                      <>
+                        <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                        Memperbarui...
+                      </>
+                    ) : (
+                      'Perbarui Event'
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
