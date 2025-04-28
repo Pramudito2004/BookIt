@@ -199,10 +199,7 @@ export default function EventsPage() {
               }
             }}
           >
-            <span className="inline-block">Discover</span>{' '}
-            <span className="inline-block bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-pink-300">
-              Amazing Events
-            </span>
+            <span className="inline-block">Temukan Event Menarik di Sekitarmu</span>{' '}
           </motion.h1>
           <motion.p 
             className="text-white/90 text-center max-w-2xl mx-auto text-lg"
@@ -210,7 +207,7 @@ export default function EventsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
           >
-            Find and book tickets for the best events happening around you
+            Jelajahi ratusan event konser, workshop, pameran, dan festival di seluruh Indonesia
           </motion.p>
         </div>
 
