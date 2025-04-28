@@ -5,6 +5,11 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { z } from 'zod';
+// Import TipTap
+import { useEditor, EditorContent, BubbleMenu } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
+import Link from '@tiptap/extension-link';
 
 // Use the same validation schema from the backend
 const EventSchema = z.object({
@@ -46,6 +51,25 @@ export default function CreateEventPage() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Initialize TipTap editor
+  const editor = useEditor({
+    extensions: [
+      StarterKit,
+      Image,
+      Link.configure({
+        openOnClick: false,
+      }),
+    ],
+    content: formData.deskripsi,
+    onUpdate: ({ editor }) => {
+      const html = editor.getHTML();
+      setFormData(prev => ({
+        ...prev,
+        deskripsi: html
+      }));
+    },
+  });
 
   useEffect(() => {
     if (!user) {
@@ -130,6 +154,49 @@ export default function CreateEventPage() {
       const preview = URL.createObjectURL(file);
       setSelectedImage({ file, preview });
     }
+  };
+
+  // Function to handle image upload for TipTap editor
+  const addImageToEditor = async () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    
+    input.onchange = async () => {
+      if (!input.files?.length) return;
+      const file = input.files[0];
+      
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+      
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error('Failed to upload image');
+        }
+        
+        const uploadData = await uploadResponse.json();
+        const imageUrl = uploadData.url;
+        
+        if (editor) {
+          editor.chain().focus().setImage({ src: imageUrl }).run();
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image');
+      }
+    };
+    
+    input.click();
   };
 
   useEffect(() => {
@@ -290,14 +357,106 @@ export default function CreateEventPage() {
                   <label className="block text-gray-700 font-medium mb-2">
                     Deskripsi
                   </label>
-                  <textarea
-                    name="deskripsi"
-                    value={formData.deskripsi}
-                    onChange={handleChange}
-                    placeholder="Jelaskan detail event yang akan diselenggarakan..."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    rows={5}
-                  />
+                  
+                  <div className="border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-purple-500 overflow-hidden mb-2">
+                    {/* TipTap Editor Toolbar */}
+                    <div className="flex items-center gap-2 p-2 border-b border-gray-200 bg-gray-50">
+                      <button
+                        type="button"
+                        onClick={() => editor?.chain().focus().toggleBold().run()}
+                        className={`p-1 rounded hover:bg-gray-200 ${editor?.isActive('bold') ? 'bg-gray-200' : ''}`}
+                        title="Bold"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
+                          <path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"></path>
+                        </svg>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => editor?.chain().focus().toggleItalic().run()}
+                        className={`p-1 rounded hover:bg-gray-200 ${editor?.isActive('italic') ? 'bg-gray-200' : ''}`}
+                        title="Italic"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="19" y1="4" x2="10" y2="4"></line>
+                          <line x1="14" y1="20" x2="5" y2="20"></line>
+                          <line x1="15" y1="4" x2="9" y2="20"></line>
+                        </svg>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
+                        className={`p-1 rounded hover:bg-gray-200 ${editor?.isActive('heading', { level: 2 }) ? 'bg-gray-200' : ''}`}
+                        title="Heading"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M6 12h12"></path>
+                          <path d="M6 4v16"></path>
+                          <path d="M18 4v16"></path>
+                        </svg>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => editor?.chain().focus().toggleBulletList().run()}
+                        className={`p-1 rounded hover:bg-gray-200 ${editor?.isActive('bulletList') ? 'bg-gray-200' : ''}`}
+                        title="Bullet List"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="8" y1="6" x2="21" y2="6"></line>
+                          <line x1="8" y1="12" x2="21" y2="12"></line>
+                          <line x1="8" y1="18" x2="21" y2="18"></line>
+                          <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                          <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                          <line x1="3" y1="18" x2="3.01" y2="18"></line>
+                        </svg>
+                      </button>
+
+                      <div className="h-6 w-px bg-gray-300 mx-1"></div>
+                      
+                      <button
+                        type="button"
+                        onClick={addImageToEditor}
+                        className="p-1 rounded hover:bg-gray-200"
+                        title="Add Image"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                          <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = window.prompt('Enter the URL');
+                          if (url) {
+                            editor?.chain().focus().setLink({ href: url }).run();
+                          }
+                        }}
+                        className={`p-1 rounded hover:bg-gray-200 ${editor?.isActive('link') ? 'bg-gray-200' : ''}`}
+                        title="Add Link"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
+                      </button>
+                    </div>
+                    
+                    {/* TipTap Editor Content */}
+                    <div className="p-4 min-h-[200px]">
+                      <EditorContent editor={editor} className="prose max-w-none focus:outline-none" />
+                    </div>
+                  </div>
+                  
+                  <p className="text-sm text-gray-500 mt-2">
+                    * Anda dapat menambahkan gambar venue map dengan mengklik tombol gambar di toolbar
+                  </p>
                 </div>
                 
                 <div className="mb-6">
