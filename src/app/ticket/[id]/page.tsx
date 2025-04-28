@@ -435,9 +435,10 @@ export default function EventDetailPage() {
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
                     Tentang Acara Ini
                   </h2>
-                  <p className="text-gray-700 mb-6 whitespace-pre-line">
-                    {event.deskripsi}
-                  </p>
+                  <div 
+                    className="prose prose-indigo max-w-none text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: event.deskripsi }}
+                  />
                 </div>
               )}
 
