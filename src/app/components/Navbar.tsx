@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import debounce from "lodash.debounce";
 
 export default function Navbar() {
   // State for mobile menu
@@ -12,12 +14,55 @@ export default function Navbar() {
   // State for navbar scrolling
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // State for search query
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // State for search results
+  const [searchResults, setSearchResults] = useState<Array<{
+    event_id: string;
+    nama_event: string;
+    tanggal_mulai: string;
+    lokasi: string;
+  }>>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+
   // Auth context
   const { user, logout, setUser } = useAuth();
   const router = useRouter();
 
   // Refs
   const navbarRef = useRef<HTMLDivElement>(null);
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    debounce(async (query: string) => {
+      if (query.trim().length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/events/search?q=${encodeURIComponent(query)}`);
+        const data = await response.json();
+        setSearchResults(data.events);
+      } catch (error) {
+        console.error('Search error:', error);
+        setSearchResults([]);
+      }
+    }, 300),
+    []
+  );
+
+  // Handle search input changes
+  useEffect(() => {
+    if (searchQuery) {
+      debouncedSearch(searchQuery);
+      setShowSearchResults(true);
+    } else {
+      setSearchResults([]);
+      setShowSearchResults(false);
+    }
+  }, [searchQuery]);
 
   // Handle scroll event to make navbar sticky
   useEffect(() => {
@@ -36,35 +81,57 @@ export default function Navbar() {
     };
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const handleLogout = async () => {
     await logout();
-    router.push('/');
+    router.push("/");
     setMobileMenuOpen(false);
   };
 
-  const handleSwitchAccountType = async (type: 'customer' | 'creator') => {
-    const userData = localStorage.getItem('user');
+  const handleSwitchAccountType = async (type: "customer" | "creator") => {
+    const userData = localStorage.getItem("user");
     if (userData) {
       const currentUser = JSON.parse(userData);
-      
+
       // Update user type and authorization role
       const updatedUser = {
         ...currentUser,
         type: type,
-        activeRole: type // Set active role to match the selected type
+        activeRole: type, // Set active role to match the selected type
       };
 
       // Update local storage with new user data
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      localStorage.setItem("user", JSON.stringify(updatedUser));
 
       // Set user context data
       setUser && setUser(updatedUser);
 
       // Redirect to homepage using window.location for a full page refresh
-      window.location.href = '/';
+      window.location.href = "/";
     }
   };
-  
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      router.push(`/events/search?q=${encodeURIComponent(searchQuery)}`);
+      setShowSearchResults(false);
+      setSearchQuery('');
+      setMobileMenuOpen(false);
+    }
+  };
+
   return (
     <div
       ref={navbarRef}
@@ -79,36 +146,12 @@ export default function Navbar() {
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-6">
             <Link href="/" className="font-bold text-2xl flex items-center">
-              <svg
-                className={`w-8 h-8 mr-2 ${
-                  isScrolled ? "text-indigo-600" : "text-white"
-                }`}
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M19 3H5C3.89543 3 3 3.89543 3 5V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V5C21 3.89543 20.1046 3 19 3Z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M9 13L12 16L15 13"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M12 8V16"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              {/* logo */}
+              <img
+                src={isScrolled ? "/image/warna.svg" : "/image/putih.svg"}
+                alt="BookIt Logo"
+                className="w-6 h-6 mr-1"
+              />
               <span
                 className={
                   isScrolled ? "text-indigo-600" : "text-white tracking-wider"
@@ -118,18 +161,7 @@ export default function Navbar() {
               </span>
             </Link>
             <nav className="hidden md:flex items-center space-x-1">
-              <Link
-                href="/ticket"
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-                  isScrolled
-                    ? "text-gray-700 hover:bg-gray-100"
-                    : "text-white/80 hover:text-white hover:bg-white/10"
-                }`}
-              >
-                Cari Event
-              </Link>
-              
-              {user?.type === 'creator' && (
+              {user?.type === "creator" && (
                 <Link
                   href="/organizer"
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
@@ -141,19 +173,93 @@ export default function Navbar() {
                   Kelola Event
                 </Link>
               )}
-              
-              {user?.type === 'customer' && (
+
+              {user?.type === "customer" && (
                 <Link
                   href="/customer/dashboard"
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     isScrolled
-                      ? "text-gray-700 hover:bg-gray-100" 
+                      ? "text-gray-700 hover:bg-gray-100"
                       : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
                   Tiket Saya
                 </Link>
               )}
+
+              <div className="relative">
+                <div className="relative group">
+                  <input
+                    type="text"
+                    placeholder="Cari event..."
+                    className={`w-64 pl-4 pr-12 py-2 text-sm rounded-full border transition-all duration-200 focus:outline-none focus:ring-2 ${
+                      isScrolled
+                        ? "bg-gray-50 border-gray-200 focus:ring-indigo-500 text-gray-800"
+                        : "bg-white/10 border-transparent text-white placeholder-white/70 focus:ring-white/50 focus:w-72"
+                    }`}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleSearch();
+                      }
+                    }}
+                    onFocus={() => setShowSearchResults(true)}
+                  />
+                  <button
+                    onClick={handleSearch}
+                    className={`absolute right-0 top-0 h-full px-4 flex items-center justify-center transition-all duration-200 rounded-r-full ${
+                      isScrolled
+                        ? "text-gray-400 hover:text-indigo-600"
+                        : "text-white/70 hover:text-white"
+                    }`}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  </button>
+
+                  {/* Search Results Dropdown */}
+                  {showSearchResults && searchResults && searchResults.length > 0 && (
+                    <div 
+                      className="absolute mt-2 w-96 bg-white rounded-lg shadow-xl overflow-hidden z-50"
+                      onMouseDown={(e) => e.preventDefault()}
+                    >
+                      <div className="max-h-96 overflow-y-auto">
+                        {searchResults.map((event) => (
+                          <Link
+                            key={event.event_id}
+                            href={`/ticket/${event.event_id}`}
+                            onClick={() => {
+                              setShowSearchResults(false);
+                              setSearchQuery('');
+                            }}
+                            className="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+                          >
+                            <div className="text-sm font-medium text-gray-800">{event.nama_event}</div>
+                            <div className="text-xs text-gray-500 mt-1">
+                              <span className="inline-block mr-3">
+                                📅 {new Date(event.tanggal_mulai).toLocaleDateString('id-ID')}
+                              </span>
+                              <span>📍 {event.lokasi}</span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </nav>
           </div>
 
@@ -163,46 +269,63 @@ export default function Navbar() {
                 <div className="relative group">
                   <button
                     className={`flex items-center text-sm py-2 px-4 rounded-full transition-all duration-200 ${
-                      isScrolled
-                        ? "hover:bg-gray-100"
-                        : "hover:bg-white/10"
+                      isScrolled ? "hover:bg-gray-100" : "hover:bg-white/10"
                     }`}
                   >
                     <span className="mr-1">{user.name}</span>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M19 9l-7 7-7-7"
+                      />
                     </svg>
                   </button>
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <div className="py-2">
-                      <Link href="/profile" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
+                      <Link
+                        href="/profile"
+                        className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
+                      >
                         Profil Saya
                       </Link>
-                      
+
                       {/* Show appropriate menu based on user type */}
-                      {user.type === 'customer' ? (
-                        <Link href="/customer/dashboard" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
+                      {user.type === "customer" ? (
+                        <Link
+                          href="/customer/dashboard"
+                          className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
+                        >
                           Tiket Saya
                         </Link>
                       ) : (
-                        <Link href="/organizer" className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600">
+                        <Link
+                          href="/organizer"
+                          className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
+                        >
                           Kelola Event
                         </Link>
                       )}
 
                       <div className="border-t border-gray-200 my-1"></div>
-                      
+
                       {/* Account switching buttons */}
-                      {user.type === 'customer' ? (
+                      {user.type === "customer" ? (
                         <button
-                          onClick={() => handleSwitchAccountType('creator')}
+                          onClick={() => handleSwitchAccountType("creator")}
                           className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                         >
                           Beralih ke Event Creator
                         </button>
                       ) : (
                         <button
-                          onClick={() => handleSwitchAccountType('customer')}
+                          onClick={() => handleSwitchAccountType("customer")}
                           className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                         >
                           Beralih ke Akun Pembeli
@@ -292,15 +415,44 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <div className="md:hidden absolute inset-x-0 top-16 z-40 bg-gradient-to-b from-indigo-600 to-purple-700 pt-4 pb-6 px-4 shadow-xl rounded-b-2xl">
             <nav className="flex flex-col space-y-3">
-              <Link
-                href="/ticket"
-                className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Cari Event
-              </Link>
-              
-              {user?.type === 'creator' && (
+              <div className="relative px-4 py-2">
+                <input
+                  type="text"
+                  placeholder="Cari event..."
+                  className="w-full px-4 pr-12 py-2 text-sm rounded-full bg-white/10 border border-transparent text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch();
+                      setMobileMenuOpen(false);
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    handleSearch();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="absolute right-5 top-1/2 -translate-y-1/2 p-2 text-white/70 hover:text-white"
+                >
+                  <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              {user?.type === "creator" && (
                 <Link
                   href="/organizer"
                   className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
@@ -309,7 +461,7 @@ export default function Navbar() {
                   Kelola Event
                 </Link>
               )}
-              
+
               {user && (
                 <Link
                   href="/customer/dashboard"
@@ -319,7 +471,7 @@ export default function Navbar() {
                   Tiket Saya
                 </Link>
               )}
-              
+
               {user ? (
                 <>
                   <div className="pt-3 pb-1 px-4 border-t border-white/20">
@@ -335,7 +487,7 @@ export default function Navbar() {
                   </Link>
 
                   {/* Show appropriate menu based on user type */}
-                  {user.type === 'customer' ? (
+                  {user.type === "customer" ? (
                     <Link
                       href="/customer/dashboard"
                       className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
@@ -355,10 +507,10 @@ export default function Navbar() {
 
                   {/* Account switching buttons */}
                   <div className="border-t border-white/10 my-2"></div>
-                  {user.type === 'customer' ? (
+                  {user.type === "customer" ? (
                     <button
                       onClick={() => {
-                        handleSwitchAccountType('creator');
+                        handleSwitchAccountType("creator");
                         setMobileMenuOpen(false);
                       }}
                       className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded-lg"
@@ -368,7 +520,7 @@ export default function Navbar() {
                   ) : (
                     <button
                       onClick={() => {
-                        handleSwitchAccountType('customer');
+                        handleSwitchAccountType("customer");
                         setMobileMenuOpen(false);
                       }}
                       className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded-lg"
@@ -387,7 +539,7 @@ export default function Navbar() {
               ) : (
                 <div className="pt-4 flex flex-col space-y-3">
                   <Link href="/login">
-                    <button 
+                    <button
                       className="w-full text-sm py-2 px-4 text-white border border-white/60 rounded-full hover:bg-white/10"
                       onClick={() => setMobileMenuOpen(false)}
                     >
@@ -395,7 +547,7 @@ export default function Navbar() {
                     </button>
                   </Link>
                   <Link href="/register">
-                    <button 
+                    <button
                       className="w-full text-sm py-2 px-4 bg-white text-indigo-600 rounded-full"
                       onClick={() => setMobileMenuOpen(false)}
                     >
