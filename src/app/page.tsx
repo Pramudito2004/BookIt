@@ -42,12 +42,12 @@ export default function HomePage() {
     { name: "All", icon: "🌟" },
     { name: "Music", icon: "🎵" },
     { name: "Sports", icon: "⚽" },
-    { name: "Exhibitions", icon: "🖼️" },
+    { name: "Arts", icon: "🖼️" },
     { name: "Theater", icon: "🎭" },
     { name: "Education", icon: "📚" },
     { name: "Food & Beverage", icon: "🍔" },
-    { name: "Fashion", icon: "👗" },
-    { name: "Wellness", icon: "🧘" },
+    { name: "Lifestyle", icon: "👗" },
+    { name: "Health", icon: "🧘" },
   ];
 
   const cities = [
@@ -397,41 +397,6 @@ export default function HomePage() {
               seluruh Indonesia
             </motion.p>
           </div>
-
-          <motion.div
-            className="bg-white rounded-xl shadow-2xl p-4 max-w-3xl mx-auto transform translate-y-6"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-          >
-            <div className="flex flex-col md:flex-row space-y-3 md:space-y-0">
-              <div className="flex-grow md:mr-2 relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg
-                    className="w-5 h-5 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    ></path>
-                  </svg>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Cari event, konser, pameran..."
-                  className="w-full pl-10 pr-4 py-3 text-gray-800 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                />
-              </div>
-              <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 font-medium shadow-md">
-                Cari
-              </button>
-            </div>
-          </motion.div>
         </div>
 
         {/* Light glow effects */}
@@ -755,7 +720,7 @@ export default function HomePage() {
         <div className="container mx-auto px-4 lg:px-8 flex flex-col md:flex-row items-center text-white">
           <div className="md:w-1/2 mb-8 md:mb-0">
             <Image
-              src="/api/placeholder/500/400"
+              src="/image/image create event.png"
               alt="Create event illustration"
               width={500}
               height={400}
