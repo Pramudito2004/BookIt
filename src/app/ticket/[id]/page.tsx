@@ -28,6 +28,7 @@ interface Event {
   event_id: string;
   nama_event: string;
   deskripsi: string;
+  kota_kabupaten: string;
   lokasi: string;
   tanggal_mulai: string;
   tanggal_selesai: string;
@@ -120,10 +121,10 @@ export default function EventDetailPage() {
   // Initialize form with user data if available
   useEffect(() => {
     if (user) {
-      setFormData(prevData => ({
+      setFormData((prevData) => ({
         ...prevData,
         fullName: user.name || prevData.fullName,
-        email: user.email || prevData.email
+        email: user.email || prevData.email,
       }));
     }
   }, [user]);
@@ -234,10 +235,12 @@ export default function EventDetailPage() {
   const handleBuyTicketClick = () => {
     if (!user) {
       // Redirect to login page if user is not logged in
-      router.push(`/login?redirectTo=${encodeURIComponent(`/ticket/${eventId}`)}`);
+      router.push(
+        `/login?redirectTo=${encodeURIComponent(`/ticket/${eventId}`)}`
+      );
       return;
     }
-    
+
     setIsCheckoutOpen(true);
   };
 
@@ -252,7 +255,7 @@ export default function EventDetailPage() {
     try {
       // Get user ID from auth context
       const userId = user?.id;
-      
+
       if (!userId) {
         throw new Error("User not authenticated");
       }
@@ -292,7 +295,7 @@ export default function EventDetailPage() {
       // Redirect to customer dashboard after successful order
       setTimeout(() => {
         setIsCheckoutOpen(false);
-        router.push('/customer/dashboard');
+        router.push("/customer/dashboard");
       }, 3000);
     } catch (err: any) {
       console.error("Error creating order:", err);
@@ -391,7 +394,10 @@ export default function EventDetailPage() {
                 d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
               />
             </svg>
-            {event.lokasi}
+            <div className="flex flex-col my-2">
+              <span className="font-medium">{event.kota_kabupaten}</span>
+              <span className="text-sm opacity-90">{event.lokasi}</span>
+            </div>
           </div>
           {event.creator && (
             <div className="flex items-center text-white/90">
@@ -435,10 +441,9 @@ export default function EventDetailPage() {
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
                     Tentang Acara Ini
                   </h2>
-                  <div 
-                    className="prose prose-indigo max-w-none text-gray-700"
-                    dangerouslySetInnerHTML={{ __html: event.deskripsi }}
-                  />
+                  <p className="text-gray-700 mb-6 whitespace-pre-line">
+                    {event.deskripsi}
+                  </p>
                 </div>
               )}
 
@@ -450,8 +455,9 @@ export default function EventDetailPage() {
                   </h2>
                   <div className="bg-gray-100 p-4 rounded-lg mb-6">
                     <h3 className="font-bold mb-2 text-gray-800">
-                      {event.lokasi}
+                      {event.kota_kabupaten}
                     </h3>
+                    <p className="text-gray-600">{event.lokasi}</p>
                   </div>
                 </div>
               )}
@@ -662,7 +668,7 @@ export default function EventDetailPage() {
                       Email konfirmasi telah dikirim ke alamat email Anda.
                     </p>
                   </div>
-                  <Link 
+                  <Link
                     href="/customer/dashboard"
                     className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors inline-block mt-4"
                   >

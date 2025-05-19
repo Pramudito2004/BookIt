@@ -66,11 +66,11 @@ export async function POST(request: NextRequest) {
 
     // Return success response
     return NextResponse.json({
-      message: 'Login berhasil',
       user: {
         id: user.user_id,
         email: user.email,
         name: user.pembeli?.nama_pembeli || user.event_creator?.nama_brand,
+        type: 'customer', // Default type
         activeRole: 'customer', // Default role when logging in
         roles: {
           customer: !!user.pembeli,

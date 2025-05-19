@@ -112,10 +112,6 @@ export default function CustomerDashboard() {
     }
   }, [user, router]);
 
-  // Fetch user tickets
-// src\app\customer\dashboard\page.tsx
-// Di useEffect untuk memuat tiket
-
 useEffect(() => {
   if (!user) return;
   

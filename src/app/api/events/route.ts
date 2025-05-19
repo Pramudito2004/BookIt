@@ -7,6 +7,7 @@ import { z } from 'zod'
 const EventSchema = z.object({
   nama_event: z.string().min(1, "Event name is required"),
   deskripsi: z.string().optional(),
+  kota_kabupaten: z.string().min(1, "City/Regency is required"),
   lokasi: z.string().min(1, "Location is required"),
   tanggal_mulai: z.string().datetime(),
   tanggal_selesai: z.string().datetime(),
@@ -63,26 +64,18 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = EventSchema.parse(body);
 
-    // Verify creator exists
-    const creator = await prisma.eventCreator.findUnique({
-      where: {
-        creator_id: validatedData.creator_id
-      }
-    });
-
-    if (!creator) {
-      return NextResponse.json(
-        { error: 'Invalid creator ID' },
-        { status: 400 }
-      );
-    }
-
     // Create event with nested ticket types
     const newEvent = await prisma.event.create({
       data: {
-        ...validatedData,
+        nama_event: validatedData.nama_event,
+        deskripsi: validatedData.deskripsi,
+        kota_kabupaten: validatedData.kota_kabupaten,
+        lokasi: validatedData.lokasi,
         tanggal_mulai: new Date(validatedData.tanggal_mulai),
         tanggal_selesai: new Date(validatedData.tanggal_selesai),
+        foto_event: validatedData.foto_event,
+        kategori_event: validatedData.kategori_event,
+        creator_id: validatedData.creator_id,
         tipe_tikets: {
           create: validatedData.tipe_tikets
         }
