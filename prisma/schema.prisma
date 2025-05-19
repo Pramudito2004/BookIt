@@ -20,9 +20,7 @@ enum OrderStatus {
 
 enum TiketStatus {
   AVAILABLE
-  BOOKED
   SOLD
-  CANCELLED
 }
 
 model User {

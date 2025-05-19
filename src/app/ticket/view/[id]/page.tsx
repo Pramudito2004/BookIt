@@ -225,12 +225,8 @@ export default function TicketViewPage() {
   // Map API status to UI status
   const mapStatus = (apiStatus: string) => {
     switch (apiStatus.toUpperCase()) {
-      case "BOOKED":
-        return "Confirmed";
       case "AVAILABLE":
         return "Pending";
-      case "CANCELLED":
-        return "Cancelled";
       case "SOLD":
         return "Completed";
       case "PENDING_PAYMENT":

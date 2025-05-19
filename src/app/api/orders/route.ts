@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
           data: {
             tiket_type_id: validatedData.tiket_type_id,
             order_id: order.order_id,
-            status: 'BOOKED',
+            status: 'SOLD',
             kode_qr: `TICKET-${Date.now()}-${i}` // Generate a simple QR code reference
           }
         })
