@@ -46,6 +46,7 @@ export default function HomePage() {
     { name: "Theater", icon: "🎭" },
     { name: "Education", icon: "📚" },
     { name: "Food & Beverage", icon: "🍔" },
+    { name: "Technology", icon: "🖥️" },
     { name: "Lifestyle", icon: "👗" },
     { name: "Health", icon: "🧘" },
   ];
@@ -64,6 +65,9 @@ export default function HomePage() {
 
   // Fetch events when component mounts
   useEffect(() => {
+    // Reset filters and fetch initial data
+    setActiveCategory("All");
+    setActiveCity("All Cities");
     fetchEvents();
   }, []);
 
@@ -104,43 +108,72 @@ export default function HomePage() {
   const filterByCategory = (category: string) => {
     setActiveCategory(category);
     filterEvents(category, activeCity);
+
+    // If category is "All", we might want to refresh the featured events as well
+    if (category === "All") {
+      fetchEvents();
+    }
   };
 
   // Filter events by city
   const filterByCity = (city: string) => {
     setActiveCity(city);
     filterEvents(activeCategory, city);
+
+    // If city is "All Cities", refresh the events
+    if (city === "All Cities") {
+      fetchEvents();
+    }
   };
 
   // Apply both filters
   const filterEvents = async (category: string, city: string) => {
     setIsLoading(true);
     try {
-      // Base URL
-      let url = "/api/events?limit=20";
-
-      // Add filters if needed (you'll need to implement these filters in your API)
-      // This is a simplified example - your actual API might need different parameters
-      if (category !== "All") {
-        url += `&category=${encodeURIComponent(category)}`;
-      }
-
-      if (city !== "All Cities") {
-        url += `&city=${encodeURIComponent(city)}`;
-      }
-
-      const response = await fetch(url);
+      const response = await fetch("/api/events?limit=20");
       const data = await response.json();
 
       if (data.events && data.events.length > 0) {
+        let filteredEvents = [...data.events];
+
+        // Apply category filter if not "All"
+        if (category !== "All") {
+          filteredEvents = filteredEvents.filter(
+            (event) =>
+              event.kategori_event.toLowerCase() === category.toLowerCase()
+          );
+        }
+
+        // Apply city filter if not "All Cities"
+        if (city !== "All Cities") {
+          filteredEvents = filteredEvents.filter((event) => {
+            const eventCity = event.lokasi.split(",")[0].trim(); // Get first part of location (city)
+            return eventCity.toLowerCase() === city.toLowerCase();
+          });
+        }
+
+        // Sort by date
+        filteredEvents.sort(
+          (a, b) =>
+            new Date(a.tanggal_mulai).getTime() -
+            new Date(b.tanggal_mulai).getTime()
+        );
+
+        // Update both featured and upcoming events
+        setFeaturedEvents(
+          filteredEvents.slice(0, Math.min(4, filteredEvents.length))
+        );
         setUpcomingEvents(
-          data.events.slice(0, Math.min(6, data.events.length))
+          filteredEvents.slice(0, Math.min(6, filteredEvents.length))
         );
       } else {
+        setFeaturedEvents([]);
         setUpcomingEvents([]);
       }
     } catch (error) {
       console.error("Failed to filter events:", error);
+      setFeaturedEvents([]);
+      setUpcomingEvents([]);
     } finally {
       setIsLoading(false);
     }
@@ -380,7 +413,6 @@ export default function HomePage() {
           </motion.div>
         ))}
 
-        {/* Search Bar Section with improved aesthetics */}
         <div className="container mx-auto px-4 py-8 pb-16 relative z-10">
           <div className="max-w-3xl mx-auto text-center mb-8">
             {/* Static heading (removed animations) */}
