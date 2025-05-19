@@ -35,11 +35,9 @@ interface TiketType {
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
-  // Pastikan params sudah resolved:
-  const resolvedParams = await Promise.resolve(params);
-  const { id } = resolvedParams;
+  const { id } = context.params;
 
   try {
     const event = await prisma.event.findUnique({
@@ -63,8 +61,10 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { id } = context.params;
+  
   try {
     const body = await request.json();
 
@@ -77,7 +77,7 @@ export async function PUT(
     const result = await prisma.$transaction(async (tx) => {
       // First, update the main event
       const updatedEvent = await tx.event.update({
-        where: { event_id: params.id },
+        where: { event_id: id },
         data: {
           nama_event: validatedData.nama_event,
           deskripsi: validatedData.deskripsi,
@@ -137,7 +137,7 @@ export async function PUT(
             // Create new ticket
             await tx.tipeTiket.create({
               data: {
-                event_id: params.id,
+                event_id: id,
                 nama: ticket.nama,
                 harga: ticket.harga,
                 jumlah_tersedia: ticket.jumlah_tersedia,
@@ -149,7 +149,7 @@ export async function PUT(
 
       // Return updated event with fresh ticket data
       return await tx.event.findUnique({
-        where: { event_id: params.id },
+        where: { event_id: id },
         include: {
           tipe_tikets: true,
         },
@@ -179,18 +179,20 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
+  const { id } = context.params;
+  
   try {
     await prisma.$transaction(async (tx) => {
       // First, delete associated ticket types
       await tx.tipeTiket.deleteMany({
-        where: { event_id: params.id },
+        where: { event_id: id },
       });
 
       // Then delete the event
       await tx.event.delete({
-        where: { event_id: params.id },
+        where: { event_id: id },
       });
     });
 
