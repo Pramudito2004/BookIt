@@ -118,128 +118,228 @@ export default function EventsPage() {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Navbar />
       
-      {/* Enhanced Header with Animation and Particles */}
-      <motion.header 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 pt-28 pb-16 overflow-hidden"
-      >
-        <Particles
-          id="tsparticles"
-          init={particlesInit}
-          loaded={particlesLoaded}
-          options={{
-            particles: {
-              color: {
-                value: "#ffffff",
-              },
-              move: {
-                direction: "right",
-                enable: true,
-                outModes: {
-                  default: "out"
-                },
-                random: false,
-                speed: 2,
-                straight: false
-              },
-              number: {
-                density: {
-                  enable: true,
-                  area: 800
-                },
-                value: 30
-              },
-              opacity: {
-                value: 0.5
-              },
-              shape: {
-                type: ["circle", "triangle", "star"]
-              },
-              size: {
-                value: { min: 1, max: 5 }
-              }
-            },
-            detectRetina: true,
-            fpsLimit: 60,
-            interactivity: {
-              events: {
-                onHover: {
-                  enable: true,
-                  mode: "bubble"
-                }
-              },
-              modes: {
-                bubble: {
-                  distance: 200,
-                  duration: 2,
-                  opacity: 0.8,
-                  size: 6
-                }
-              }
-            }
-          }}
-          className="absolute inset-0"
-        />
+      <header className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 pt-16 relative overflow-hidden">
+        {/* Islamic themed animated elements */}
 
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.h1 
-            className="text-4xl md:text-6xl font-bold text-white text-center mb-4"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
+        {/* Crescent moon animations */}
+        <motion.div
+          className="absolute top-10 left-10 w-16 h-16 text-yellow-200/30"
+          animate={{
+            x: [0, 200, 0],
+            y: [0, 50, 0],
+            rotate: 360,
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,2.37 C7.17,2.37 3.16,5.43 2.12,9.62 C6.37,6.24 12.14,7.58 14.96,12.15 C16.97,15.21 16.87,18.75 14.96,21.6 C19.03,20.4 22,16.56 22,12 C22,6.67 17.5,2.37 12,2.37 Z" />
+          </svg>
+        </motion.div>
+
+        <motion.div
+          className="absolute top-20 right-10 w-12 h-12 text-yellow-200/40"
+          animate={{
+            x: [-100, 100, -100],
+            y: [20, -20, 20],
+            rotate: -360,
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,2.37 C7.17,2.37 3.16,5.43 2.12,9.62 C6.37,6.24 12.14,7.58 14.96,12.15 C16.97,15.21 16.87,18.75 14.96,21.6 C19.03,20.4 22,16.56 22,12 C22,6.67 17.5,2.37 12,2.37 Z" />
+          </svg>
+        </motion.div>
+
+        {/* Star animations */}
+        <motion.div
+          className="absolute top-5 left-1/4 w-8 h-8 text-yellow-100/30"
+          animate={{
+            scale: [1, 1.5, 1],
+            opacity: [0.3, 0.7, 0.3],
+            y: [0, 100, 0],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,1 L15.09,7.34 L22,8.33 L17,13.17 L18.18,20.02 L12,16.77 L5.82,20.02 L7,13.17 L2,8.33 L8.91,7.34 Z" />
+          </svg>
+        </motion.div>
+
+        <motion.div
+          className="absolute top-20 right-1/3 w-6 h-6 text-yellow-100/40"
+          animate={{
+            scale: [1, 1.8, 1],
+            opacity: [0.2, 0.6, 0.2],
+            y: [0, -80, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,1 L15.09,7.34 L22,8.33 L17,13.17 L18.18,20.02 L12,16.77 L5.82,20.02 L7,13.17 L2,8.33 L8.91,7.34 Z" />
+          </svg>
+        </motion.div>
+
+        {/* Mosque dome animations */}
+        <motion.div
+          className="absolute bottom-5 left-1/3 w-20 h-20 text-white/20"
+          animate={{
+            x: [-50, 50, -50],
+            y: [10, -10, 10],
+          }}
+          transition={{
+            duration: 18,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,2 C7.58,2 4,5.58 4,10 C4,14.08 7.05,17.44 11,17.93 L11,21 L13,21 L13,17.93 C16.95,17.44 20,14.08 20,10 C20,5.58 16.42,2 12,2 Z M12,4 C15.31,4 18,6.69 18,10 C18,13.31 15.31,16 12,16 C8.69,16 6,13.31 6,10 C6,6.69 8.69,4 12,4 Z" />
+          </svg>
+        </motion.div>
+
+        {/* Lantern animations */}
+        <motion.div
+          className="absolute bottom-10 right-1/4 w-16 h-16 text-yellow-300/30"
+          animate={{
+            y: [-20, 20, -20],
+            rotate: [-5, 5, -5],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M10,2 L14,2 L14,4 L15,4 C16.1,4 17,4.9 17,6 L17,18 C17,19.1 16.1,20 15,20 L9,20 C7.9,20 7,19.1 7,18 L7,6 C7,4.9 7.9,4 9,4 L10,4 L10,2 Z M9,6 L9,18 L15,18 L15,6 L9,6 Z M11,8 L13,8 L13,16 L11,16 L11,8 Z" />
+          </svg>
+        </motion.div>
+
+        {/* Islamic geometric pattern animations */}
+        <motion.div
+          className="absolute top-1/3 right-10 w-24 h-24 text-white/10"
+          animate={{
+            rotate: 360,
+            scale: [0.8, 1.2, 0.8],
+          }}
+          transition={{
+            duration: 30,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,2 L22,12 L12,22 L2,12 L12,2 Z M12,6.83 L6.83,12 L12,17.17 L17.17,12 L12,6.83 Z" />
+          </svg>
+        </motion.div>
+
+        <motion.div
+          className="absolute bottom-1/4 left-20 w-32 h-32 text-white/10"
+          animate={{
+            rotate: -360,
+            scale: [1, 1.5, 1],
+          }}
+          transition={{
+            duration: 40,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12,2 L22,12 L12,22 L2,12 L12,2 Z M12,6.83 L6.83,12 L12,17.17 L17.17,12 L12,6.83 Z" />
+          </svg>
+        </motion.div>
+
+        {/* Additional small stars scattered around */}
+        {Array.from({ length: 8 }).map((_, index) => (
+          <motion.div
+            key={`star-${index}`}
+            className="absolute w-4 h-4 text-yellow-100/30"
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+            }}
+            animate={{
+              opacity: [0.2, 0.6, 0.2],
+              scale: [0.8, 1.2, 0.8],
+            }}
             transition={{
-              duration: 0.8,
-              ease: [0, 0.71, 0.2, 1.01],
-              scale: {
-                type: "spring",
-                damping: 5,
-                stiffness: 100,
-                restDelta: 0.001
-              }
+              duration: 5 + Math.random() * 10,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: Math.random() * 5,
             }}
           >
-            <span className="inline-block">Temukan Event Menarik di Sekitarmu</span>{' '}
-          </motion.h1>
-          <motion.p 
-            className="text-white/90 text-center max-w-2xl mx-auto text-lg"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-          >
-            Jelajahi ratusan event konser, workshop, pameran, dan festival di seluruh Indonesia
-          </motion.p>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12,1 L15.09,7.34 L22,8.33 L17,13.17 L18.18,20.02 L12,16.77 L5.82,20.02 L7,13.17 L2,8.33 L8.91,7.34 Z" />
+            </svg>
+          </motion.div>
+        ))}
+
+        <div className="container mx-auto px-4 py-8 pb-16 relative z-10">
+          <div className="max-w-3xl mx-auto text-center mb-8">
+            {/* Static heading (removed animations) */}
+            <h1 className="text-2xl md:text-4xl font-bold mb-3 text-white relative z-20">
+              Temukan Event Menarik di Sekitarmu
+            </h1>
+            <motion.p
+              className="text-white/80 text-sm md:text-base max-w-xl mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Jelajahi ratusan event konser, workshop, pameran, dan festival di
+              seluruh Indonesia
+            </motion.p>
+          </div>
         </div>
 
-        {/* Decorative Elements */}
+        {/* Light glow effects */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <motion.div
-            className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-white/10"
+            className="absolute -right-10 -top-10 w-40 h-40 rounded-full bg-yellow-200/20"
             animate={{
               scale: [1, 1.2, 1],
-              opacity: [0.3, 0.5, 0.3],
+              opacity: [0.2, 0.4, 0.2],
             }}
             transition={{
               duration: 4,
               repeat: Infinity,
-              ease: "easeInOut"
+              ease: "easeInOut",
             }}
           />
           <motion.div
-            className="absolute -left-10 -bottom-10 w-60 h-60 rounded-full bg-white/10"
+            className="absolute -left-10 -bottom-10 w-60 h-60 rounded-full bg-yellow-200/10"
             animate={{
               scale: [1, 1.3, 1],
-              opacity: [0.2, 0.4, 0.2],
+              opacity: [0.1, 0.3, 0.1],
             }}
             transition={{
               duration: 5,
               repeat: Infinity,
               ease: "easeInOut",
-              delay: 1
+              delay: 1,
             }}
           />
         </div>
-      </motion.header>
+      </header>
 
       {/* Enhanced Events Grid */}
       <div className="container mx-auto px-4 py-16">
