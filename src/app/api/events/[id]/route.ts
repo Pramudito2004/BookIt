@@ -7,6 +7,7 @@ import { z } from "zod";
 const EventSchema = z.object({
   nama_event: z.string().min(1, "Event name is required"),
   deskripsi: z.string().optional(),
+  kota_kabupaten: z.string().min(1, "City/Regency is required"),
   lokasi: z.string().min(1, "Location is required"),
   tanggal_mulai: z.string().datetime(),
   tanggal_selesai: z.string().datetime(),
@@ -80,6 +81,7 @@ export async function PUT(
         data: {
           nama_event: validatedData.nama_event,
           deskripsi: validatedData.deskripsi,
+          kota_kabupaten: validatedData.kota_kabupaten,
           lokasi: validatedData.lokasi,
           tanggal_mulai: validatedData.tanggal_mulai,
           tanggal_selesai: validatedData.tanggal_selesai,
