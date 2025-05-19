@@ -3,11 +3,13 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext"; // Import the AuthContext
 
 export default function Sidebar() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
   const [activeTab, setActiveTab] = useState("organizer");
+  const { user } = useAuth(); // Get the user from AuthContext
 
   // Effect untuk sinkronisasi active tab dengan route yang aktif
   useEffect(() => {
@@ -29,6 +31,12 @@ export default function Sidebar() {
       setActiveTab("switch");
     }
   }, [pathname]);
+
+  // Get user's initial for avatar
+  const getUserInitial = () => {
+    if (!user || !user.email) return "?";
+    return user.email.charAt(0).toUpperCase();
+  };
 
   const sidebarMenus = [
     {
@@ -204,16 +212,16 @@ export default function Sidebar() {
         >
           {sidebarCollapsed ? (
             <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-              A
+              {getUserInitial()}
             </div>
           ) : (
             <>
               <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                A
+                {getUserInitial()}
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium">User</p>
-                <p className="text-xs text-gray-400">user@bookit.com</p>
+                <p className="text-sm font-medium">{user?.name || "User"}</p>
+                <p className="text-xs text-gray-400">{user?.email || "No email"}</p>
               </div>
             </>
           )}
