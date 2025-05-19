@@ -64,6 +64,7 @@ model Event {
   event_id          String    @id @default(uuid())
   nama_event        String
   deskripsi         String?
+  kota_kabupaten    String
   lokasi            String
   tanggal_mulai     DateTime
   tanggal_selesai   DateTime
