@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { z } from "zod";
 // Import TipTap
@@ -8,11 +8,13 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import Link from "@tiptap/extension-link";
+import { indonesianCities } from "@/data/cities";
 
 // Use the same validation schema from the backend but with proper date handling
 const EventSchema = z.object({
   nama_event: z.string().min(1, "Event name is required"),
   deskripsi: z.string().optional(),
+  kota_kabupaten: z.string().min(1, "City/Regency is required"),
   lokasi: z.string().min(1, "Location is required"),
   tanggal_mulai: z.string().transform((val) => new Date(val).toISOString()),
   tanggal_selesai: z.string().transform((val) => new Date(val).toISOString()),
@@ -45,6 +47,7 @@ interface Event {
   event_id: string;
   nama_event: string;
   deskripsi: string;
+  kota_kabupaten: string;
   lokasi: string;
   tanggal_mulai: string;
   tanggal_selesai: string;
@@ -64,16 +67,12 @@ const EVENT_CATEGORIES = [
   "Music",
   "Sports",
   "Arts",
-  "Food & Beverage",
-  "Business",
-  "Technology",
+  "Theater",
   "Education",
-  "Health",
-  "Fashion",
+  "Food & Beverage",
+  "Technology",
   "Lifestyle",
-  "Entertainment",
-  "Travel",
-  "Other",
+  "Health",
 ];
 
 // Predefined cities for dropdown
@@ -86,7 +85,6 @@ const CITIES = [
   "Medan",
   "Makassar",
   "Semarang",
-  "Other",
 ];
 
 export default function EditEventPage() {
@@ -101,6 +99,7 @@ export default function EditEventPage() {
     event_id: "",
     nama_event: "",
     deskripsi: "",
+    kota_kabupaten: "",
     lokasi: "",
     tanggal_mulai: "",
     tanggal_selesai: "",
@@ -134,6 +133,16 @@ export default function EditEventPage() {
     },
   });
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedCity, setSelectedCity] = useState("");
+
+  const filteredCities = useMemo(() => {
+    return indonesianCities.filter((city) =>
+      city.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }, [searchQuery]);
+
   // Fetch event data
   useEffect(() => {
     const fetchEvent = async () => {
@@ -154,26 +163,10 @@ export default function EditEventPage() {
           tanggal_selesai: formatDateTimeForInput(eventData.tanggal_selesai),
         };
 
-        // Ensure tipe_tikets exists and values are numbers
-        if (
-          !formattedData.tipe_tikets ||
-          formattedData.tipe_tikets.length === 0
-        ) {
-          formattedData.tipe_tikets = [
-            { nama: "", harga: 0, jumlah_tersedia: 0 },
-          ];
-        } else {
-          // Ensure harga and jumlah_tersedia are numbers
-          formattedData.tipe_tikets = formattedData.tipe_tikets.map(
-            (ticket: Ticket) => ({
-              ...ticket,
-              harga: Number(ticket.harga),
-              jumlah_tersedia: Number(ticket.jumlah_tersedia),
-            })
-          );
-        }
-
         setFormData(formattedData);
+        // Set initial values for city search
+        setSearchQuery(eventData.kota_kabupaten || "");
+        setSelectedCity(eventData.kota_kabupaten || "");
         setEditorInitialized(true);
       } catch (error) {
         console.error("Error fetching event:", error);
@@ -313,6 +306,27 @@ export default function EditEventPage() {
     input.click();
   };
 
+  const handleCitySelect = (city: string) => {
+    setSelectedCity(city);
+    setSearchQuery(city);
+    setIsDropdownOpen(false);
+
+    setFormData((prev) => ({
+      ...prev,
+      kota_kabupaten: city,
+    }));
+  };
+
+  const handleDetailLocationChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const detail = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      lokasi: detail,
+    }));
+  };
+
   useEffect(() => {
     return () => {
       if (selectedImage) {
@@ -320,6 +334,20 @@ export default function EditEventPage() {
       }
     };
   }, [selectedImage]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (!target.closest(".relative")) {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const nextStep = () => {
     setCurrentStep(currentStep + 1);
@@ -329,83 +357,84 @@ export default function EditEventPage() {
     setCurrentStep(currentStep - 1);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    setErrors({});
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSaving(true);
+  setErrors({});
 
-    try {
-      // Handle image upload if there's a new image
-      let imageUrl = formData.foto_event;
-      if (selectedImage) {
-        const imageFormData = new FormData();
-        imageFormData.append("file", selectedImage.file);
+  try {
+    // Handle image upload if there's a new image
+    let imageUrl = formData.foto_event;
+    if (selectedImage) {
+      const imageFormData = new FormData();
+      imageFormData.append("file", selectedImage.file);
 
-        const uploadResponse = await fetch("/api/upload", {
-          method: "POST",
-          body: imageFormData,
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error("Failed to upload image");
-        }
-
-        const uploadData = await uploadResponse.json();
-        imageUrl = uploadData.url;
-      }
-
-      // Prepare data for submission
-      const submitData = {
-        ...formData,
-        foto_event: imageUrl,
-        tipe_tikets: formData.tipe_tikets.map((ticket) => ({
-          tiket_type_id: ticket.tiket_type_id,
-          nama: ticket.nama,
-          harga: Number(ticket.harga),
-          jumlah_tersedia: Number(ticket.jumlah_tersedia),
-        })),
-      };
-
-      // Validate data
-      const parsedData = EventSchema.parse(submitData);
-
-      const response = await fetch(`/api/events/${eventId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(parsedData),
+      const uploadResponse = await fetch("/api/upload", {
+        method: "POST",
+        body: imageFormData,
       });
 
-      const responseData = await response.json();
-
-      if (response.ok) {
-        alert("Event updated successfully!");
-        router.push("/organizer/event-saya");
-      } else {
-        throw new Error(responseData.error || "Failed to update event");
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload image");
       }
-    } catch (error) {
-      console.error("Error in update:", error);
 
-      if (error instanceof z.ZodError) {
-        // Handle validation errors
-        const errorMap: { [key: string]: string } = {};
-        error.errors.forEach((err) => {
-          const path = err.path.join(".");
-          errorMap[path] = `${path}: ${err.message}`;
-          console.error(`Validation error at ${path}:`, err);
-        });
-        setErrors(errorMap);
-        alert(`Validation failed: ${Object.values(errorMap).join(", ")}`);
-      } else {
-        console.error("Unexpected error:", error);
-        alert("An unexpected error occurred. Please try again.");
-      }
-    } finally {
-      setIsSaving(false);
+      const uploadData = await uploadResponse.json();
+      imageUrl = uploadData.url;
     }
-  };
+
+    // Prepare data for submission
+    const submitData = {
+      ...formData,
+      foto_event: imageUrl,
+      kota_kabupaten: selectedCity || formData.kota_kabupaten, // Add this line
+      tipe_tikets: formData.tipe_tikets.map((ticket) => ({
+        tiket_type_id: ticket.tiket_type_id,
+        nama: ticket.nama,
+        harga: Number(ticket.harga),
+        jumlah_tersedia: Number(ticket.jumlah_tersedia),
+      })),
+    };
+
+    // Log the data being sent
+    console.log('Submitting data:', submitData);
+
+    // Validate data
+    const parsedData = EventSchema.parse(submitData);
+
+    const response = await fetch(`/api/events/${eventId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(parsedData),
+    });
+
+    const responseData = await response.json();
+
+    if (!response.ok) {
+      throw new Error(responseData.error || "Failed to update event");
+    }
+
+    alert("Event updated successfully!");
+    router.push("/organizer/event-saya");
+  } catch (error) {
+    console.error("Error in update:", error);
+
+    if (error instanceof z.ZodError) {
+      const errorMap: { [key: string]: string } = {};
+      error.errors.forEach((err) => {
+        const path = err.path.join(".");
+        errorMap[path] = err.message;
+      });
+      setErrors(errorMap);
+      alert(`Validation failed: ${Object.values(errorMap).join(", ")}`);
+    } else {
+      alert("An unexpected error occurred. Please try again.");
+    }
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   if (isLoading) {
     return (
@@ -887,19 +916,69 @@ export default function EditEventPage() {
 
                 <div className="mb-6">
                   <label className="block text-gray-700 font-medium mb-2">
-                    Lokasi <span className="text-red-500">*</span>
+                    Lokasi Event <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="lokasi"
-                    value={formData.lokasi}
-                    onChange={handleChange}
-                    placeholder="Masukkan alamat lengkap lokasi event"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    required
-                  />
-                  {errors.lokasi && (
-                    <p className="text-red-500 text-sm mt-1">{errors.lokasi}</p>
+
+                  <div className="space-y-4">
+                    {/* Pencarian Kota/Kabupaten */}
+                    <div className="relative">
+                      <label className="block text-gray-600 text-sm mb-1">
+                        Kota/Kabupaten
+                      </label>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => {
+                          setSearchQuery(e.target.value);
+                          setIsDropdownOpen(true);
+                        }}
+                        onFocus={() => setIsDropdownOpen(true)}
+                        placeholder="Cari kota/kabupaten..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+
+                      {isDropdownOpen && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {filteredCities.length > 0 ? (
+                            filteredCities.map((city) => (
+                              <button
+                                key={city}
+                                type="button"
+                                onClick={() => handleCitySelect(city)}
+                                className="w-full px-4 py-2 text-left hover:bg-gray-100 focus:outline-none focus:bg-gray-100"
+                              >
+                                {city}
+                              </button>
+                            ))
+                          ) : (
+                            <div className="px-4 py-2 text-gray-500">
+                              Tidak ada hasil yang ditemukan
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Detail Lokasi */}
+                    <div>
+                      <label className="block text-gray-600 text-sm mb-1">
+                        Detail Lokasi
+                      </label>
+                      <input
+                        type="text"
+                        name="lokasi"
+                        value={formData.lokasi}
+                        onChange={handleChange}
+                        placeholder="Masukkan nama gedung, alamat lengkap, dll"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  {(errors.kota_kabupaten || errors.lokasi) && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.kota_kabupaten || errors.lokasi}
+                    </p>
                   )}
                 </div>
 
