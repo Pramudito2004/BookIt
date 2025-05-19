@@ -3,11 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 export async function GET(
-  request: NextRequest,
-  { params }: { params: { creatorId: string } }
+  request: NextRequest
 ) {
   try {
-    const creatorId = params.creatorId;
+    // Ambil creatorId dari URL
+    const creatorId = request.nextUrl.pathname.split('/').pop();
+
+    if (!creatorId) {
+      return NextResponse.json({ error: 'Creator ID is required' }, { status: 400 });
+    }
+
+    // Ambil parameter pagination dari query string
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
