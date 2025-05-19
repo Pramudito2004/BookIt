@@ -1,9 +1,8 @@
-// src\app\api\events\[id]\route.ts
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
 
-// Validation Schema (reuse from previous route)
+// Validation Schema
 const EventSchema = z.object({
   nama_event: z.string().min(1, "Event name is required"),
   deskripsi: z.string().optional(),
@@ -33,13 +32,19 @@ interface TiketType {
   tiket_type_id: string;
 }
 
+// GET handler
 export async function GET(
-  req: NextRequest,
-  context: { params: { id: string } }
+  request: NextRequest
 ) {
-  const { id } = context.params;
+  // Get id from URL
+  const id = request.nextUrl.pathname.split('/').pop();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
+  }
 
   try {
+    // Get the event
     const event = await prisma.event.findUnique({
       where: { event_id: id },
       include: {
@@ -59,15 +64,19 @@ export async function GET(
   }
 }
 
+// PUT handler
 export async function PUT(
-  request: NextRequest,
-  context: { params: { id: string } }
+  request: NextRequest
 ) {
-  const { id } = context.params;
-  
+  // Get id from URL
+  const id = request.nextUrl.pathname.split('/').pop();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
+  }
+
   try {
     const body = await request.json();
-
     console.log("Received update data:", JSON.stringify(body, null, 2));
 
     // Validate input
@@ -177,12 +186,17 @@ export async function PUT(
   }
 }
 
+// DELETE handler
 export async function DELETE(
-  request: NextRequest,
-  context: { params: { id: string } }
+  request: NextRequest
 ) {
-  const { id } = context.params;
-  
+  // Get id from URL
+  const id = request.nextUrl.pathname.split('/').pop();
+
+  if (!id) {
+    return NextResponse.json({ error: 'Event ID is required' }, { status: 400 });
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
       // First, delete associated ticket types
