@@ -58,35 +58,55 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json();
     
     // Validate input
-    const validatedData = EventSchema.parse(body)
+    const validatedData = EventSchema.parse(body);
+
+    // Verify creator exists
+    const creator = await prisma.eventCreator.findUnique({
+      where: {
+        creator_id: validatedData.creator_id
+      }
+    });
+
+    if (!creator) {
+      return NextResponse.json(
+        { error: 'Invalid creator ID' },
+        { status: 400 }
+      );
+    }
 
     // Create event with nested ticket types
     const newEvent = await prisma.event.create({
       data: {
         ...validatedData,
+        tanggal_mulai: new Date(validatedData.tanggal_mulai),
+        tanggal_selesai: new Date(validatedData.tanggal_selesai),
         tipe_tikets: {
           create: validatedData.tipe_tikets
         }
       },
       include: {
-        tipe_tikets: true
+        tipe_tikets: true,
+        creator: true
       }
-    })
+    });
 
-    return NextResponse.json(newEvent, { status: 201 })
+    return NextResponse.json(newEvent, { status: 201 });
   } catch (error) {
-    console.error('Error creating event:', error)
+    console.error('Error creating event:', error);
     
     if (error instanceof z.ZodError) {
       return NextResponse.json({ 
         error: 'Validation failed', 
         details: error.errors 
-      }, { status: 400 })
+      }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'Failed to create event' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Failed to create event' },
+      { status: 500 }
+    );
   }
 }

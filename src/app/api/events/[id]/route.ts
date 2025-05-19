@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import prisma from '@/lib/prisma'
-import { z } from 'zod'
+// src\app\api\events\[id]\route.ts
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+import { z } from "zod";
 
 // Validation Schema (reuse from previous route)
 const EventSchema = z.object({
@@ -13,56 +13,67 @@ const EventSchema = z.object({
   foto_event: z.string().optional(),
   kategori_event: z.string().min(1, "Event category is required"),
   creator_id: z.string().min(1, "Creator ID is required"),
-  tipe_tikets: z.array(z.object({
-    tiket_type_id: z.string().optional(),
-    nama: z.string().min(1, "Ticket type name is required"),
-    harga: z.number().positive("Price must be positive"),
-    jumlah_tersedia: z.number().int().positive("Available tickets must be positive")
-  })).optional()
-})
+  tipe_tikets: z
+    .array(
+      z.object({
+        tiket_type_id: z.string().optional(),
+        nama: z.string().min(1, "Ticket type name is required"),
+        harga: z.number().positive("Price must be positive"),
+        jumlah_tersedia: z
+          .number()
+          .int()
+          .positive("Available tickets must be positive"),
+      })
+    )
+    .optional(),
+});
 
 interface TiketType {
   tiket_type_id: string;
 }
 
 export async function GET(
-  request: NextRequest, 
+  req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  // Pastikan params sudah resolved:
+  const resolvedParams = await Promise.resolve(params);
+  const { id } = resolvedParams;
+
   try {
     const event = await prisma.event.findUnique({
-      where: { event_id: params.id },
+      where: { event_id: id },
       include: {
         creator: true,
-        tipe_tikets: true
-      }
-    })
+        tipe_tikets: true,
+      },
+    });
 
     if (!event) {
-      return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
 
-    return NextResponse.json(event)
-  } catch (error) {
-    console.error('Error fetching event:', error)
-    return NextResponse.json({ error: 'Failed to fetch event' }, { status: 500 })
+    return NextResponse.json(event);
+  } catch (err) {
+    console.error("Error:", err);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
 export async function PUT(
-  request: NextRequest, 
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const body = await request.json()
-    
-    console.log("Received update data:", JSON.stringify(body, null, 2))
-    
+    const body = await request.json();
+
+    console.log("Received update data:", JSON.stringify(body, null, 2));
+
     // Validate input
-    const validatedData = EventSchema.parse(body)
+    const validatedData = EventSchema.parse(body);
 
     // Update event and ticket types
-    const result = await prisma.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>) => {
+    const result = await prisma.$transaction(async (tx) => {
       // First, update the main event
       const updatedEvent = await tx.event.update({
         where: { event_id: params.id },
@@ -73,35 +84,39 @@ export async function PUT(
           tanggal_mulai: validatedData.tanggal_mulai,
           tanggal_selesai: validatedData.tanggal_selesai,
           foto_event: validatedData.foto_event,
-          kategori_event: validatedData.kategori_event
+          kategori_event: validatedData.kategori_event,
         },
         include: {
-          tipe_tikets: true
-        }
-      })
+          tipe_tikets: true,
+        },
+      });
 
       // If ticket types are provided, update them
       if (validatedData.tipe_tikets && validatedData.tipe_tikets.length > 0) {
-        // Get existing ticket type IDs 
-        const existingTicketIds = updatedEvent.tipe_tikets.map((t: TiketType) => t.tiket_type_id)
-        
+        // Get existing ticket type IDs
+        const existingTicketIds = updatedEvent.tipe_tikets.map(
+          (t: TiketType) => t.tiket_type_id
+        );
+
         // Get IDs of tickets in the updated data that have IDs
         const updatedTicketIds = validatedData.tipe_tikets
-          .filter(t => t.tiket_type_id)
-          .map(t => t.tiket_type_id!) 
-        
+          .filter((t) => t.tiket_type_id)
+          .map((t) => t.tiket_type_id!);
+
         // Find IDs that are in existing but not in updated = tickets to delete
-        const ticketIdsToDelete = existingTicketIds.filter((id: string) => !updatedTicketIds.includes(id))
-        
+        const ticketIdsToDelete = existingTicketIds.filter(
+          (id: string) => !updatedTicketIds.includes(id)
+        );
+
         // Delete tickets that are no longer in the list
         if (ticketIdsToDelete.length > 0) {
           await tx.tipeTiket.deleteMany({
             where: {
               tiket_type_id: {
-                in: ticketIdsToDelete
-              }
-            }
-          })
+                in: ticketIdsToDelete,
+              },
+            },
+          });
         }
 
         // Process each ticket type
@@ -113,9 +128,9 @@ export async function PUT(
               data: {
                 nama: ticket.nama,
                 harga: ticket.harga,
-                jumlah_tersedia: ticket.jumlah_tersedia
-              }
-            })
+                jumlah_tersedia: ticket.jumlah_tersedia,
+              },
+            });
           } else {
             // Create new ticket
             await tx.tipeTiket.create({
@@ -123,9 +138,9 @@ export async function PUT(
                 event_id: params.id,
                 nama: ticket.nama,
                 harga: ticket.harga,
-                jumlah_tersedia: ticket.jumlah_tersedia
-              }
-            })
+                jumlah_tersedia: ticket.jumlah_tersedia,
+              },
+            });
           }
         }
       }
@@ -134,46 +149,55 @@ export async function PUT(
       return await tx.event.findUnique({
         where: { event_id: params.id },
         include: {
-          tipe_tikets: true
-        }
-      })
-    })
+          tipe_tikets: true,
+        },
+      });
+    });
 
-    return NextResponse.json(result)
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('Error updating event:', error)
-    
+    console.error("Error updating event:", error);
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ 
-        error: 'Validation failed', 
-        details: error.errors 
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: "Validation failed",
+          details: error.errors,
+        },
+        { status: 400 }
+      );
     }
 
-    return NextResponse.json({ error: 'Failed to update event' }, { status: 500 })
+    return NextResponse.json(
+      { error: "Failed to update event" },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(
-  request: NextRequest, 
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    await prisma.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use'>) => {
+    await prisma.$transaction(async (tx) => {
       // First, delete associated ticket types
       await tx.tipeTiket.deleteMany({
-        where: { event_id: params.id }
-      })
+        where: { event_id: params.id },
+      });
 
       // Then delete the event
       await tx.event.delete({
-        where: { event_id: params.id }
-      })
-    })
+        where: { event_id: params.id },
+      });
+    });
 
-    return NextResponse.json({ message: 'Event deleted successfully' })
+    return NextResponse.json({ message: "Event deleted successfully" });
   } catch (error) {
-    console.error('Error deleting event:', error)
-    return NextResponse.json({ error: 'Failed to delete event' }, { status: 500 })
+    console.error("Error deleting event:", error);
+    return NextResponse.json(
+      { error: "Failed to delete event" },
+      { status: 500 }
+    );
   }
 }

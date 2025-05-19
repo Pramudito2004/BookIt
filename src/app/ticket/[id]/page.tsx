@@ -8,6 +8,7 @@ import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import { format } from "date-fns";
+import { useAuth } from "@/context/AuthContext";
 
 // Define interfaces for our data
 interface TicketType {
@@ -49,6 +50,7 @@ export default function EventDetailPage() {
   const params = useParams();
   const router = useRouter();
   const eventId = params.id as string;
+  const { user } = useAuth();
 
   // State variables
   const [event, setEvent] = useState<Event | null>(null);
@@ -114,6 +116,17 @@ export default function EventDetailPage() {
 
     fetchEventData();
   }, [eventId]);
+
+  // Initialize form with user data if available
+  useEffect(() => {
+    if (user) {
+      setFormData(prevData => ({
+        ...prevData,
+        fullName: user.name || prevData.fullName,
+        email: user.email || prevData.email
+      }));
+    }
+  }, [user]);
 
   // Fetch related events
   const fetchRelatedEvents = async (category: string) => {
@@ -196,25 +209,36 @@ export default function EventDetailPage() {
     const errors: Partial<CheckoutFormData> = {};
 
     if (!formData.fullName.trim()) {
-      errors.fullName = "Full name is required";
+      errors.fullName = "Nama lengkap diperlukan";
     }
 
     if (!formData.email.trim()) {
-      errors.email = "Email is required";
+      errors.email = "Email diperlukan";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = "Email is invalid";
+      errors.email = "Format email tidak valid";
     }
 
     if (!formData.phone.trim()) {
-      errors.phone = "Phone number is required";
+      errors.phone = "Nomor telepon diperlukan";
     }
 
     if (!formData.paymentMethod) {
-      errors.paymentMethod = "Please select a payment method";
+      errors.paymentMethod = "Silakan pilih metode pembayaran";
     }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  // Handle buy ticket button click
+  const handleBuyTicketClick = () => {
+    if (!user) {
+      // Redirect to login page if user is not logged in
+      router.push(`/login?redirectTo=${encodeURIComponent(`/ticket/${eventId}`)}`);
+      return;
+    }
+    
+    setIsCheckoutOpen(true);
   };
 
   // Handle order submission
@@ -226,9 +250,12 @@ export default function EventDetailPage() {
     setIsProcessing(true);
 
     try {
-      // In a real application, you would get the user_id from auth context
-      // For this example, we'll use a hardcoded UUID
-      const userId = "a1b2c3d4-e5f6-7890-1234-56789abcdef0"; // This should come from auth
+      // Get user ID from auth context
+      const userId = user?.id;
+      
+      if (!userId) {
+        throw new Error("User not authenticated");
+      }
 
       const orderData = {
         user_id: userId,
@@ -262,17 +289,15 @@ export default function EventDetailPage() {
       setOrderData(result.data);
       setOrderSuccess(true);
 
-      // In a real app, you would redirect to payment gateway here
-      // For this example, we'll just simulate success
+      // Redirect to customer dashboard after successful order
       setTimeout(() => {
         setIsCheckoutOpen(false);
-        // Redirect to user's tickets or order confirmation page
-        // router.push(`/my-tickets/${result.data.order.order_id}`);
+        router.push('/customer/dashboard');
       }, 3000);
     } catch (err: any) {
       console.error("Error creating order:", err);
       setError(
-        err.message || "Failed to process your order. Please try again."
+        err.message || "Gagal memproses pesanan Anda. Silakan coba lagi."
       );
     } finally {
       setIsProcessing(false);
@@ -299,16 +324,16 @@ export default function EventDetailPage() {
         <div className="container mx-auto px-4 py-24 text-center">
           <div className="bg-white p-8 rounded-xl shadow-md max-w-lg mx-auto">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">
-              Event Not Found
+              Event Tidak Ditemukan
             </h1>
             <p className="text-gray-600 mb-6">
-              {error || "We couldn't find the event you're looking for."}
+              {error || "Kami tidak dapat menemukan acara yang Anda cari."}
             </p>
             <button
               onClick={() => router.push("/")}
               className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
             >
-              Back to Home
+              Kembali ke Beranda
             </button>
           </div>
         </div>
@@ -370,7 +395,7 @@ export default function EventDetailPage() {
           </div>
           {event.creator && (
             <div className="flex items-center text-white/90">
-              <span className="mr-2">Organized by:</span>
+              <span className="mr-2">Diselenggarakan oleh:</span>
               <span className="font-medium">{event.creator.nama_brand}</span>
             </div>
           )}
@@ -385,8 +410,8 @@ export default function EventDetailPage() {
             {/* Navigation Tabs */}
             <div className="flex border-b border-gray-200 mb-6">
               {[
-                { id: "description", label: "Description" },
-                { id: "location", label: "Location" },
+                { id: "description", label: "Deskripsi" },
+                { id: "location", label: "Lokasi" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -408,11 +433,12 @@ export default function EventDetailPage() {
               {activeTab === "description" && (
                 <div>
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                    About This Event
+                    Tentang Acara Ini
                   </h2>
-                  <p className="text-gray-700 mb-6 whitespace-pre-line">
-                    {event.deskripsi}
-                  </p>
+                  <div 
+                    className="prose prose-indigo max-w-none text-gray-700"
+                    dangerouslySetInnerHTML={{ __html: event.deskripsi }}
+                  />
                 </div>
               )}
 
@@ -420,7 +446,7 @@ export default function EventDetailPage() {
               {activeTab === "location" && (
                 <div>
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                    Event Location
+                    Lokasi Acara
                   </h2>
                   <div className="bg-gray-100 p-4 rounded-lg mb-6">
                     <h3 className="font-bold mb-2 text-gray-800">
@@ -436,7 +462,7 @@ export default function EventDetailPage() {
           <div className="lg:w-1/3 mt-8 lg:mt-0">
             <div className="bg-white p-6 rounded-xl shadow-sm sticky top-24">
               <h2 className="text-xl font-bold mb-4 text-gray-800">
-                Select Tickets
+                Pilih Tiket
               </h2>
 
               {/* Ticket Type Selection */}
@@ -464,10 +490,10 @@ export default function EventDetailPage() {
                       </div>
                       <p className="text-sm text-gray-600">
                         {ticket.deskripsi ||
-                          `${ticket.nama} ticket for ${event.nama_event}`}
+                          `${ticket.nama} tiket untuk ${event.nama_event}`}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {ticket.jumlah_tersedia} tickets available
+                        Tersisa {ticket.jumlah_tersedia} tiket
                       </p>
                     </div>
                   ))}
@@ -475,7 +501,7 @@ export default function EventDetailPage() {
               ) : (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                   <p className="text-yellow-700 text-sm">
-                    No tickets are currently available for this event.
+                    Tidak ada tiket yang tersedia untuk acara ini saat ini.
                   </p>
                 </div>
               )}
@@ -485,7 +511,7 @@ export default function EventDetailPage() {
                 <>
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Number of Tickets
+                      Jumlah Tiket
                     </label>
                     <div className="flex items-center">
                       <button
@@ -543,7 +569,7 @@ export default function EventDetailPage() {
                   {/* Price Summary */}
                   <div className="border-t border-gray-200 pt-4 mb-6">
                     <div className="flex justify-between mb-2 text-gray-800">
-                      <span className="text-gray-600">Price per ticket</span>
+                      <span className="text-gray-600">Harga per tiket</span>
                       <span>
                         {selectedTicket
                           ? `Rp${selectedTicket.harga.toLocaleString()}`
@@ -551,7 +577,7 @@ export default function EventDetailPage() {
                       </span>
                     </div>
                     <div className="flex justify-between mb-2 text-gray-800">
-                      <span className="text-gray-600">Quantity</span>
+                      <span className="text-gray-600">Jumlah</span>
                       <span>{ticketQuantity}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg text-gray-800">
@@ -562,7 +588,7 @@ export default function EventDetailPage() {
 
                   {/* Checkout Button */}
                   <button
-                    onClick={() => setIsCheckoutOpen(true)}
+                    onClick={handleBuyTicketClick}
                     disabled={!selectedTicketType}
                     className={`w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 shadow-md ${
                       selectedTicketType
@@ -570,7 +596,7 @@ export default function EventDetailPage() {
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
-                    Buy Tickets
+                    {user ? "Beli Tiket" : "Login untuk Membeli"}
                   </button>
                 </>
               )}
@@ -586,7 +612,7 @@ export default function EventDetailPage() {
             <div className="p-6 flex flex-col">
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold">Complete Your Purchase</h3>
+                <h3 className="text-xl font-bold">Selesaikan Pembelian Anda</h3>
                 <button
                   onClick={() => setIsCheckoutOpen(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -626,16 +652,22 @@ export default function EventDetailPage() {
                       />
                     </svg>
                     <h4 className="text-xl font-bold mb-2">
-                      Order Successful!
+                      Pemesanan Berhasil!
                     </h4>
-                    <p>Your tickets have been booked successfully.</p>
+                    <p>Tiket Anda telah berhasil dipesan.</p>
                     <p className="mt-2 text-sm">
-                      Order ID: {orderData?.order?.order_id}
+                      ID Pesanan: {orderData?.order?.order_id}
                     </p>
                     <p className="mt-2 text-sm">
-                      A confirmation email has been sent to your email address.
+                      Email konfirmasi telah dikirim ke alamat email Anda.
                     </p>
                   </div>
+                  <Link 
+                    href="/customer/dashboard"
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors inline-block mt-4"
+                  >
+                    Lihat Tiket Saya
+                  </Link>
                 </div>
               ) : (
                 <>
@@ -666,7 +698,7 @@ export default function EventDetailPage() {
                   <div className="space-y-4 mb-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Full Name
+                        Nama Lengkap
                       </label>
                       <input
                         type="text"
@@ -678,7 +710,7 @@ export default function EventDetailPage() {
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                        placeholder="Enter your full name"
+                        placeholder="Masukkan nama lengkap"
                         disabled={isProcessing}
                       />
                       {formErrors.fullName && (
@@ -689,7 +721,7 @@ export default function EventDetailPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email Address
+                        Alamat Email
                       </label>
                       <input
                         type="email"
@@ -701,7 +733,7 @@ export default function EventDetailPage() {
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                        placeholder="Enter your email address"
+                        placeholder="Masukkan alamat email"
                         disabled={isProcessing}
                       />
                       {formErrors.email && (
@@ -712,7 +744,7 @@ export default function EventDetailPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Phone Number
+                        Nomor Telepon
                       </label>
                       <input
                         type="tel"
@@ -724,7 +756,7 @@ export default function EventDetailPage() {
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                        placeholder="Enter your phone number"
+                        placeholder="Masukkan nomor telepon"
                         disabled={isProcessing}
                       />
                       {formErrors.phone && (
@@ -737,7 +769,7 @@ export default function EventDetailPage() {
 
                   {/* Payment Method */}
                   <div className="mb-6">
-                    <h4 className="font-medium mb-2">Payment Method</h4>
+                    <h4 className="font-medium mb-2">Metode Pembayaran</h4>
                     {formErrors.paymentMethod && (
                       <p className="text-red-500 text-xs mb-2">
                         {formErrors.paymentMethod}
@@ -745,8 +777,8 @@ export default function EventDetailPage() {
                     )}
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        "Credit Card",
-                        "Bank Transfer",
+                        "Kartu Kredit",
+                        "Transfer Bank",
                         "E-Wallet",
                         "Virtual Account",
                       ].map((method) => (
