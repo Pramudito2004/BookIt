@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext"; // Import the AuthContext
 export default function Sidebar() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
-  const [activeTab, setActiveTab] = useState("organizer");
+  const [activeTab, setActiveTab] = useState("organizer/event-saya");
   const { user } = useAuth(); // Get the user from AuthContext
 
   // Effect untuk sinkronisasi active tab dengan route yang aktif
@@ -43,16 +43,16 @@ export default function Sidebar() {
       section: "Dashboard",
       items: [
         {
-          name: "Dashboard",
-          icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
-          id: "organizer",
-          path: "/organizer",
-        },
-        {
           name: "Event Saya",
           icon: "M15 5a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h10zm-4 6a2 2 0 100-4 2 2 0 000 4z",
           id: "event-saya",
           path: "/organizer/event-saya",
+        },
+        {
+          name: "Laporan",
+          icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+          id: "reports",
+          path: "/organizer/reports",
         },
       ],
     },
@@ -81,12 +81,6 @@ export default function Sidebar() {
           icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z",
           id: "rekening",
           path: "/organizer/rekening",
-        },
-        {
-          name: "Laporan",
-          icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-          id: "reports",
-          path: "/organizer/reports",
         },
         {
           name: "Pengaturan",
