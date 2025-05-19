@@ -47,6 +47,7 @@ CREATE TABLE "Event" (
     "event_id" TEXT NOT NULL,
     "nama_event" TEXT NOT NULL,
     "deskripsi" TEXT,
+    "kota_kabupaten" TEXT NOT NULL,
     "lokasi" TEXT NOT NULL,
     "tanggal_mulai" TIMESTAMP(3) NOT NULL,
     "tanggal_selesai" TIMESTAMP(3) NOT NULL,
