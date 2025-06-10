@@ -1,9 +1,6 @@
-// src\app\components\MidtransSnap.tsx
+// src/app/components/MidtransSnap.tsx
 "use client";
 
-import { createCoreApiInstance } from "@/lib/midtrans";
-import prisma from "@/lib/prisma";
-import { NextRequest, NextResponse } from "next/server";
 import { useEffect, useState } from "react";
 
 declare global {
@@ -131,29 +128,3 @@ const MidtransSnap: React.FC<MidtransSnapProps> = ({
 };
 
 export default MidtransSnap;
-
-// Tambahkan route baru: api/payments/status/[orderId]/route.ts
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { orderId: string } }
-) {
-  try {
-    const coreApi = createCoreApiInstance();
-    const status = await coreApi.transaction.status(params.orderId);
-
-    // Update status berdasarkan response
-    if (status.transaction_status === "settlement") {
-      await prisma.order.update({
-        where: { order_id: params.orderId },
-        data: { status: "PAID" },
-      });
-    }
-
-    return NextResponse.json(status);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Failed to check status" },
-      { status: 500 }
-    );
-  }
-}
