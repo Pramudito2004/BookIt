@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 
 // Validation Schema (reuse from previous route)
 const EventSchema = z.object({
@@ -33,11 +34,13 @@ interface TiketType {
   tiket_type_id: string;
 }
 
-export async function GET(
-  req: NextRequest,
-  context: { params: { id: string } }
-) {
-  const { id } = context.params;
+export async function GET(req: NextRequest) {
+  const url = new URL(req.url);
+  const id = url.pathname.split("/").pop();
+
+  if (!id) {
+    return NextResponse.json({ error: "ID is required" }, { status: 400 });
+  }
 
   try {
     const event = await prisma.event.findUnique({
@@ -49,112 +52,103 @@ export async function GET(
     });
 
     if (!event) {
-      return NextResponse.json({ error: 'Event not found' }, { status: 404 });
+      return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
     return NextResponse.json(event);
   } catch (err) {
     console.error("Error:", err);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
-  const { id } = context.params;
-  
+export async function PUT(request: NextRequest) {
+  const url = new URL(request.url);
+  const id = url.pathname.split("/").pop();
+
+  if (!id) {
+    return NextResponse.json({ error: "ID is required" }, { status: 400 });
+  }
+
   try {
     const body = await request.json();
 
     console.log("Received update data:", JSON.stringify(body, null, 2));
 
-    // Validate input
     const validatedData = EventSchema.parse(body);
 
-    // Update event and ticket types
-    const result = await prisma.$transaction(async (tx) => {
-      // First, update the main event
-      const updatedEvent = await tx.event.update({
-        where: { event_id: id },
-        data: {
-          nama_event: validatedData.nama_event,
-          deskripsi: validatedData.deskripsi,
-          kota_kabupaten: validatedData.kota_kabupaten,
-          lokasi: validatedData.lokasi,
-          tanggal_mulai: validatedData.tanggal_mulai,
-          tanggal_selesai: validatedData.tanggal_selesai,
-          foto_event: validatedData.foto_event,
-          kategori_event: validatedData.kategori_event,
-        },
-        include: {
-          tipe_tikets: true,
-        },
-      });
+    const result = await prisma.$transaction(
+      async (tx: Prisma.TransactionClient) => {
+        const updatedEvent = await tx.event.update({
+          where: { event_id: id },
+          data: {
+            nama_event: validatedData.nama_event,
+            deskripsi: validatedData.deskripsi,
+            kota_kabupaten: validatedData.kota_kabupaten,
+            lokasi: validatedData.lokasi,
+            tanggal_mulai: validatedData.tanggal_mulai,
+            tanggal_selesai: validatedData.tanggal_selesai,
+            foto_event: validatedData.foto_event,
+            kategori_event: validatedData.kategori_event,
+          },
+          include: {
+            tipe_tikets: true,
+          },
+        });
 
-      // If ticket types are provided, update them
-      if (validatedData.tipe_tikets && validatedData.tipe_tikets.length > 0) {
-        // Get existing ticket type IDs
-        const existingTicketIds = updatedEvent.tipe_tikets.map(
-          (t: TiketType) => t.tiket_type_id
-        );
+        if (validatedData.tipe_tikets && validatedData.tipe_tikets.length > 0) {
+          const existingTicketIds = updatedEvent.tipe_tikets.map(
+            (t: TiketType) => t.tiket_type_id
+          );
 
-        // Get IDs of tickets in the updated data that have IDs
-        const updatedTicketIds = validatedData.tipe_tikets
-          .filter((t) => t.tiket_type_id)
-          .map((t) => t.tiket_type_id!);
+          const updatedTicketIds = validatedData.tipe_tikets
+            .filter((t) => t.tiket_type_id)
+            .map((t) => t.tiket_type_id!);
 
-        // Find IDs that are in existing but not in updated = tickets to delete
-        const ticketIdsToDelete = existingTicketIds.filter(
-          (id: string) => !updatedTicketIds.includes(id)
-        );
+          const ticketIdsToDelete = existingTicketIds.filter(
+            (tid: string) => !updatedTicketIds.includes(tid)
+          );
 
-        // Delete tickets that are no longer in the list
-        if (ticketIdsToDelete.length > 0) {
-          await tx.tipeTiket.deleteMany({
-            where: {
-              tiket_type_id: {
-                in: ticketIdsToDelete,
-              },
-            },
-          });
-        }
-
-        // Process each ticket type
-        for (const ticket of validatedData.tipe_tikets) {
-          if (ticket.tiket_type_id) {
-            // Update existing ticket
-            await tx.tipeTiket.update({
-              where: { tiket_type_id: ticket.tiket_type_id },
-              data: {
-                nama: ticket.nama,
-                harga: ticket.harga,
-                jumlah_tersedia: ticket.jumlah_tersedia,
-              },
-            });
-          } else {
-            // Create new ticket
-            await tx.tipeTiket.create({
-              data: {
-                event_id: id,
-                nama: ticket.nama,
-                harga: ticket.harga,
-                jumlah_tersedia: ticket.jumlah_tersedia,
-              },
+          if (ticketIdsToDelete.length > 0) {
+            await tx.tipeTiket.deleteMany({
+              where: { tiket_type_id: { in: ticketIdsToDelete } },
             });
           }
-        }
-      }
 
-      // Return updated event with fresh ticket data
-      return await tx.event.findUnique({
-        where: { event_id: id },
-        include: {
-          tipe_tikets: true,
-        },
-      });
-    });
+          for (const ticket of validatedData.tipe_tikets) {
+            if (ticket.tiket_type_id) {
+              await tx.tipeTiket.update({
+                where: { tiket_type_id: ticket.tiket_type_id },
+                data: {
+                  nama: ticket.nama,
+                  harga: ticket.harga,
+                  jumlah_tersedia: ticket.jumlah_tersedia,
+                },
+              });
+            } else {
+              await tx.tipeTiket.create({
+                data: {
+                  event_id: id,
+                  nama: ticket.nama,
+                  harga: ticket.harga,
+                  jumlah_tersedia: ticket.jumlah_tersedia,
+                },
+              });
+            }
+          }
+        }
+
+        return await tx.event.findUnique({
+          where: { event_id: id },
+          include: {
+            tipe_tikets: true,
+          },
+        });
+      }
+    );
 
     return NextResponse.json(result);
   } catch (error) {
@@ -162,10 +156,7 @@ export async function PUT(
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        {
-          error: "Validation failed",
-          details: error.errors,
-        },
+        { error: "Validation failed", details: error.errors },
         { status: 400 }
       );
     }
@@ -177,20 +168,20 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
-  const { id } = context.params;
-  
+export async function DELETE(request: NextRequest) {
+  const url = new URL(request.url);
+  const id = url.pathname.split("/").pop();
+
+  if (!id) {
+    return NextResponse.json({ error: "ID is required" }, { status: 400 });
+  }
+
   try {
-    await prisma.$transaction(async (tx) => {
-      // First, delete associated ticket types
+    await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       await tx.tipeTiket.deleteMany({
         where: { event_id: id },
       });
 
-      // Then delete the event
       await tx.event.delete({
         where: { event_id: id },
       });

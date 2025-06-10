@@ -1,15 +1,14 @@
-// src\app\api\users\[userId]\tickets\route.ts
+// src/app/api/users/[userId]/tickets/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const userId = params.userId;
+    const url = new URL(request.url);
+    const segments = url.pathname.split('/');
+    // segments: ['', 'api', 'users', userId, 'tickets']
+    const userId = segments[segments.indexOf('users') + 1];
 
-    // Validate userId
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },

@@ -1,7 +1,8 @@
-// app/api/orders/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import prisma from "@/lib/prisma";
+import type { Prisma } from "@prisma/client";
 import { z } from 'zod'
+import { createSnapInstance } from '@/lib/midtrans';
 
 // Validation Schema for orders
 const OrderSchema = z.object({
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     const validatedData = OrderSchema.parse(body)
 
     // Begin a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Check if ticket type exists and has enough availability
       const ticketType = await tx.tipeTiket.findUnique({
         where: { tiket_type_id: validatedData.tiket_type_id }
@@ -39,69 +40,111 @@ export async function POST(request: NextRequest) {
       if (ticketType.jumlah_tersedia < validatedData.quantity) {
         throw new Error('Not enough tickets available')
       }
+      
+      // Get event information for payment description
+      const event = await tx.event.findUnique({
+        where: { event_id: validatedData.event_id }
+      });
+      
+      if (!event) {
+        throw new Error('Event not found');
+      }
 
-      // 2. Create the order
+      // 2. Create the order with PENDING status
       const order = await tx.order.create({
         data: {
           user_id: validatedData.user_id,
           jumlah_total: validatedData.jumlah_total,
-          status: 'PAID',
+          status: 'PENDING', // Set to PENDING until payment is confirmed
         }
       })
 
-      // 3. Create the tickets
-      const tickets = []
+      // 3. Create the tickets with AVAILABLE status initially
+      const tickets = [];
       for (let i = 0; i < validatedData.quantity; i++) {
         const ticket = await tx.tiket.create({
           data: {
             tiket_type_id: validatedData.tiket_type_id,
             order_id: order.order_id,
-            status: 'SOLD',
+            status: 'AVAILABLE', // Will be updated after payment confirmation
             kode_qr: `TICKET-${Date.now()}-${i}` // Generate a simple QR code reference
           }
         })
         tickets.push(ticket)
       }
 
-      // 4. Update ticket availability
-      await tx.tipeTiket.update({
-        where: { tiket_type_id: validatedData.tiket_type_id },
-        data: {
-          jumlah_tersedia: ticketType.jumlah_tersedia - validatedData.quantity
-        }
-      })
-
-      // 5. Create payment record
+      // 4. Create payment record with PENDING status
       const payment = await tx.pembayaran.create({
         data: {
           order_id: order.order_id,
           jumlah: validatedData.jumlah_total,
-          status: 'PAID', // Will be updated after payment confirmation
+          status: 'PENDING', // Will be updated after payment confirmation
         }
       })
 
-      // 6. Create invoice
+      // 5. Create invoice
+      const invoiceNumber = `INV-${Date.now()}`;
       const invoice = await tx.invoice.create({
         data: {
           pembayaran_id: payment.payment_id,
-          nomor_invoice: `INV-${Date.now()}`,
+          nomor_invoice: invoiceNumber,
           jumlah: validatedData.jumlah_total,
         }
       })
 
-      // 7. Create event history
-      await tx.eventHistory.create({
-        data: {
-          event_id: validatedData.event_id,
-          user_id: validatedData.user_id,
+      // 6. Generate Midtrans Snap token
+      const snap = createSnapInstance();
+      
+      // Calculate the exact amount
+      const price = Number(ticketType.harga);
+      const quantity = validatedData.quantity;
+      const total = price * quantity;
+      
+      // Make sure the ticket name is not too long (max 50 characters)
+      const ticketName = ticketType.nama.length > 20 
+        ? ticketType.nama.substring(0, 20) 
+        : ticketType.nama;
+      
+      const eventName = event.nama_event.length > 20
+        ? event.nama_event.substring(0, 20)
+        : event.nama_event;
+        
+      const itemName = `${ticketName} - ${eventName}`;
+      
+      const parameter = {
+        transaction_details: {
+          order_id: order.order_id,
+          gross_amount: Math.round(total) // Ensure it's an integer
+        },
+        item_details: [{
+          id: ticketType.tiket_type_id,
+          price: Math.round(price), // Ensure it's an integer
+          quantity: quantity,
+          name: itemName
+        }],
+        customer_details: {
+          first_name: validatedData.buyer_info.name,
+          email: validatedData.buyer_info.email,
+          phone: validatedData.buyer_info.phone,
+        },
+        callbacks: {
+          finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?order_id=${order.order_id}`,
+          error: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/error?order_id=${order.order_id}`,
+          pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending?order_id=${order.order_id}`
         }
-      })
+      };
+
+      console.log('Midtrans parameter:', JSON.stringify(parameter));
+
+      const snapResponse = await snap.createTransaction(parameter);
 
       return {
         order,
         tickets,
         payment,
-        invoice
+        invoice,
+        snap_token: snapResponse.token,
+        redirect_url: snapResponse.redirect_url
       }
     })
 

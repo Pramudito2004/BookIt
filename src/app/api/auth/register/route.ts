@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import type { Prisma } from '@prisma/client'; 
 
 // Validation schema
 const registerSchema = z.object({
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(validatedData.password, 10);
 
     // Create all accounts in transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // Create user
       const newUser = await tx.user.create({
         data: {
@@ -67,14 +68,14 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error('Registration error:', error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: 'Validasi gagal', details: error.issues },
         { status: 400 }
       );
     }
-    
+
     return NextResponse.json(
       { error: 'Pendaftaran gagal' },
       { status: 500 }
