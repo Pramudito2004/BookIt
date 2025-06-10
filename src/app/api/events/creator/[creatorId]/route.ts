@@ -4,10 +4,10 @@ import prisma from '@/lib/prisma';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { creatorId: string } }
+  { params }: { params: Promise<{ creatorId: string }> }
 ) {
   try {
-    const creatorId = params.creatorId;
+    const { creatorId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
