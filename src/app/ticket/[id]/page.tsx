@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
+import MidtransSnap from "@/app/components/MidtransSnap";
 import { format } from "date-fns";
 import { useAuth } from "@/context/AuthContext";
 
@@ -44,7 +45,6 @@ interface CheckoutFormData {
   fullName: string;
   email: string;
   phone: string;
-  paymentMethod: string;
 }
 
 export default function EventDetailPage() {
@@ -64,16 +64,18 @@ export default function EventDetailPage() {
   );
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState<CheckoutFormData>({
     fullName: "",
     email: "",
     phone: "",
-    paymentMethod: "",
   });
   const [formErrors, setFormErrors] = useState<Partial<CheckoutFormData>>({});
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderData, setOrderData] = useState<any>(null);
+  const [snapToken, setSnapToken] = useState<string | null>(null);
+  const [showMidtransSnap, setShowMidtransSnap] = useState(false);
 
   // Fetch event data when component mounts
   useEffect(() => {
@@ -128,6 +130,14 @@ export default function EventDetailPage() {
       }));
     }
   }, [user]);
+
+  // Effect to handle Midtrans Snap token
+  useEffect(() => {
+    // When we get a snap token, show the Midtrans popup
+    if (snapToken) {
+      setShowMidtransSnap(true);
+    }
+  }, [snapToken]);
 
   // Fetch related events
   const fetchRelatedEvents = async (category: string) => {
@@ -189,22 +199,6 @@ export default function EventDetailPage() {
     }
   };
 
-  // Handle payment method selection
-  const handlePaymentMethodChange = (method: string) => {
-    setFormData({
-      ...formData,
-      paymentMethod: method,
-    });
-
-    // Clear error
-    if (formErrors.paymentMethod) {
-      setFormErrors({
-        ...formErrors,
-        paymentMethod: undefined,
-      });
-    }
-  };
-
   // Validate form before submission
   const validateForm = (): boolean => {
     const errors: Partial<CheckoutFormData> = {};
@@ -223,10 +217,6 @@ export default function EventDetailPage() {
       errors.phone = "Nomor telepon diperlukan";
     }
 
-    if (!formData.paymentMethod) {
-      errors.paymentMethod = "Silakan pilih metode pembayaran";
-    }
-
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -242,6 +232,34 @@ export default function EventDetailPage() {
     }
 
     setIsCheckoutOpen(true);
+    // Reset payment error if any
+    setPaymentError(null);
+  };
+
+  // Handle the Midtrans Snap callbacks
+  const handlePaymentSuccess = () => {
+    setOrderSuccess(true);
+    // Redirect to dashboard after 3 seconds
+    setTimeout(() => {
+      router.push('/customer/dashboard');
+    }, 3000);
+  };
+
+  const handlePaymentPending = () => {
+    router.push(`/payment/pending?order_id=${orderData?.order?.order_id}`);
+  };
+
+  const handlePaymentError = () => {
+    setPaymentError("Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.");
+    setIsProcessing(false);
+    setSnapToken(null);
+    setShowMidtransSnap(false);
+  };
+
+  const handlePaymentClose = () => {
+    setShowMidtransSnap(false);
+    setSnapToken(null);
+    setIsProcessing(false);
   };
 
   // Handle order submission
@@ -251,6 +269,7 @@ export default function EventDetailPage() {
     }
 
     setIsProcessing(true);
+    setPaymentError(null);
 
     try {
       // Get user ID from auth context
@@ -271,8 +290,10 @@ export default function EventDetailPage() {
           email: formData.email,
           phone: formData.phone,
         },
-        payment_method: formData.paymentMethod,
+        payment_method: "Midtrans",
       };
+
+      console.log('Submitting order data:', JSON.stringify(orderData));
 
       const response = await fetch("/api/orders", {
         method: "POST",
@@ -288,21 +309,22 @@ export default function EventDetailPage() {
         throw new Error(result.message || "Failed to create order");
       }
 
-      // Order created successfully
-      setOrderData(result.data);
-      setOrderSuccess(true);
+      console.log('Order created successfully:', result);
 
-      // Redirect to customer dashboard after successful order
-      setTimeout(() => {
-        setIsCheckoutOpen(false);
-        router.push("/customer/dashboard");
-      }, 3000);
+      // Save order data
+      setOrderData(result.data);
+      
+      // Get the snap token from the response
+      if (result.data.snap_token) {
+        setSnapToken(result.data.snap_token);
+      } else {
+        throw new Error("No payment token received");
+      }
     } catch (err: any) {
       console.error("Error creating order:", err);
-      setError(
+      setPaymentError(
         err.message || "Gagal memproses pesanan Anda. Silakan coba lagi."
       );
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -612,6 +634,17 @@ export default function EventDetailPage() {
         </div>
       </div>
 
+      {/* Midtrans Snap Integration */}
+      {showMidtransSnap && snapToken && (
+        <MidtransSnap
+          snapToken={snapToken}
+          onSuccess={handlePaymentSuccess}
+          onPending={handlePaymentPending}
+          onError={handlePaymentError}
+          onClose={handlePaymentClose}
+        />
+      )}
+
       {/* Checkout Modal */}
       {isCheckoutOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -701,6 +734,28 @@ export default function EventDetailPage() {
                     </div>
                   </div>
 
+                  {/* Payment Error Message */}
+                  {paymentError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+                      <div className="flex items-center">
+                        <svg
+                          className="w-5 h-5 mr-2 text-red-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span>{paymentError}</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Form Input */}
                   <div className="space-y-4 mb-6">
                     <div>
@@ -777,48 +832,30 @@ export default function EventDetailPage() {
                   {/* Payment Method */}
                   <div className="mb-6">
                     <h4 className="font-medium mb-2">Metode Pembayaran</h4>
-                    {formErrors.paymentMethod && (
-                      <p className="text-red-500 text-xs mb-2">
-                        {formErrors.paymentMethod}
-                      </p>
-                    )}
-                    <div className="grid grid-cols-2 gap-3">
-                      {[
-                        "Kartu Kredit",
-                        "Transfer Bank",
-                        "E-Wallet",
-                        "Virtual Account",
-                      ].map((method) => (
-                        <div
-                          key={method}
-                          onClick={() =>
-                            !isProcessing && handlePaymentMethodChange(method)
-                          }
-                          className={`flex items-center p-3 border ${
-                            formData.paymentMethod === method
-                              ? "border-indigo-600 bg-indigo-50"
-                              : "border-gray-200"
-                          } rounded-lg cursor-pointer hover:border-indigo-300 hover:bg-indigo-50 transition-colors ${
-                            isProcessing ? "opacity-70 cursor-not-allowed" : ""
-                          }`}
-                        >
-                          <input
-                            type="radio"
-                            name="payment"
-                            id={method.toLowerCase().replace(/\s+/g, "-")}
-                            checked={formData.paymentMethod === method}
-                            onChange={() => handlePaymentMethodChange(method)}
-                            disabled={isProcessing}
-                            className="mr-2"
-                          />
-                          <label
-                            htmlFor={method.toLowerCase().replace(/\s+/g, "-")}
-                            className="cursor-pointer"
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 mr-3">
+                          <svg
+                            className="w-6 h-6 text-indigo-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                           >
-                            {method}
-                          </label>
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth="2"
+                              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
                         </div>
-                      ))}
+                        <div>
+                          <p className="font-medium">Midtrans Payment Gateway</p>
+                          <p className="text-xs text-gray-500">
+                            Bayar dengan berbagai metode: Kartu Kredit, Virtual Account, E-Wallet, dan lainnya
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -833,16 +870,15 @@ export default function EventDetailPage() {
                     {isProcessing ? (
                       <div className="flex items-center justify-center">
                         <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></div>
-                        Processing...
+                        Memproses...
                       </div>
                     ) : (
-                      "Pay Now"
+                      "Bayar Sekarang"
                     )}
                   </button>
 
                   <p className="text-center text-xs text-gray-500 mt-4">
-                    By completing this purchase, you agree to our Terms and
-                    Conditions.
+                    Dengan menyelesaikan pembelian ini, Anda menyetujui Syarat dan Ketentuan kami.
                   </p>
                 </>
               )}
