@@ -50,12 +50,6 @@ export async function POST(request: NextRequest) {
 
     // Check ticket status
     switch (ticket.status) {
-      case 'CANCELLED':
-        return NextResponse.json({
-          valid: false,
-          message: 'This ticket has been cancelled'
-        });
-      
       case 'SOLD':
         return NextResponse.json({
           valid: false,

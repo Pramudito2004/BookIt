@@ -110,7 +110,6 @@ model Pembayaran {
   payment_id        String    @id @default(uuid())
   order_id          String    @unique
   order             Order     @relation(fields: [order_id], references: [order_id])
-  invoice_id        String?
   jumlah            Decimal
   status            String
   waktu_transaksi   DateTime  @default(now())

@@ -3,17 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 export async function GET(
-  request: NextRequest
+  request: NextRequest,
+  { params }: { params: { creatorId: string } }
 ) {
   try {
-    // Ambil creatorId dari URL
-    const creatorId = request.nextUrl.pathname.split('/').pop();
-
-    if (!creatorId) {
-      return NextResponse.json({ error: 'Creator ID is required' }, { status: 400 });
-    }
-
-    // Ambil parameter pagination dari query string
+    const creatorId = params.creatorId;
     const searchParams = request.nextUrl.searchParams;
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '10');
@@ -22,14 +16,14 @@ export async function GET(
     // Get total count
     const total = await prisma.event.count({
       where: {
-        creator_id: creatorId
-      }
+        creator_id: creatorId,
+      },
     });
 
     // Get events for current page
     const events = await prisma.event.findMany({
       where: {
-        creator_id: creatorId
+        creator_id: creatorId,
       },
       select: {
         event_id: true,
@@ -38,13 +32,13 @@ export async function GET(
         tanggal_selesai: true,
         foto_event: true,
         lokasi: true,
-        kategori_event: true
+        kategori_event: true,
       },
       orderBy: {
-        tanggal_mulai: 'desc'
+        tanggal_mulai: 'desc',
       },
       skip,
-      take: limit
+      take: limit,
     });
 
     return NextResponse.json({
@@ -53,14 +47,11 @@ export async function GET(
         page,
         limit,
         total,
-        totalPages: Math.ceil(total / limit)
-      }
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('Error fetching events:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch events' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch events' }, { status: 500 });
   }
 }
