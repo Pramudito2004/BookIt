@@ -14,7 +14,7 @@ services:
     #   - .:/app
     #   - /app/node_modules
     environment:
-      - DATABASE_URL=postgresql://postgres:123@db:5432/new_bookit?schema=public
+      - DATABASE_URL=postgres://postgres.qppddchwrozexigaqyhb:xKPLKNpq2FV1sEm7@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require&supa=base-pooler.x
 
   db:
     image: postgres:15
