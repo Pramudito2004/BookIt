@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile } from 'fs/promises';
-import { join } from 'path';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,19 +18,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
     // Create unique filename
-    const filename = `${Date.now()}-${file.name}`;
-    const path = join(process.cwd(), 'public/uploads', filename);
+    const fileExtension = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExtension}`;
     
-    // Save the file
-    await writeFile(path, buffer);
-    
-    // Return the URL
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('uploads') // Make sure this bucket exists in your Supabase project
+      .upload(fileName, buffer, {
+        contentType: file.type,
+        upsert: false
+      });
+
+    if (error) {
+      console.error('Supabase upload error:', error);
+      return NextResponse.json(
+        { error: 'Error uploading file to storage' },
+        { status: 500 }
+      );
+    }
+
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('uploads')
+      .getPublicUrl(fileName);
+
     return NextResponse.json({ 
-      url: `/uploads/${filename}` 
+      url: publicUrlData.publicUrl,
+      fileName: fileName,
+      size: file.size,
+      type: file.type
     });
     
   } catch (error) {
