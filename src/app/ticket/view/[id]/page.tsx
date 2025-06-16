@@ -228,9 +228,7 @@ export default function TicketViewPage() {
       case "AVAILABLE":
         return "Pending";
       case "SOLD":
-        return "Completed";
-      case "PENDING_PAYMENT":
-        return "Awaiting Payment";
+        return "Paid";
       case "CHECKED_IN":
         return "Checked In";
       default:
@@ -241,17 +239,12 @@ export default function TicketViewPage() {
   // Get the appropriate status badge color
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case "Confirmed":
+      case "Paid":
         return "bg-green-500 text-white";
-      case "Pending":
-      case "Awaiting Payment":
+      case "Available":
         return "bg-yellow-500 text-white";
       case "Cancelled":
         return "bg-red-500 text-white";
-      case "Completed":
-        return "bg-blue-500 text-white";
-      case "Checked In":
-        return "bg-purple-500 text-white";
       default:
         return "bg-gray-500 text-white";
     }

@@ -21,12 +21,25 @@ export async function GET(request: NextRequest) {
             event: true,
           },
         },
-        order: true,
+        order: {
+          include: {
+            pembayaran: true,
+          }
+        },
       },
     });
 
     if (!ticket) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
+    }
+
+    // Update ticket status if payment is settled
+    if (ticket.order.pembayaran?.status === 'settlement') {
+      await prisma.tiket.update({
+        where: { tiket_id: ticketId },
+        data: { status: 'SOLD' }
+      });
+      ticket.status = 'SOLD';
     }
 
     return NextResponse.json({ ticket });

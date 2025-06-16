@@ -503,13 +503,6 @@ export default function HomePage() {
                     <h3 className="text-2xl font-bold mb-2">
                       {event.nama_event}
                     </h3>
-                    <p className="text-white/90 mb-6 max-w-lg">
-                      {event.deskripsi?.slice(0, 120) ||
-                        `${event.kategori_event} event in ${event.lokasi}`}
-                      {event.deskripsi && event.deskripsi.length > 120
-                        ? "..."
-                        : ""}
-                    </p>
                     <div className="flex">
                       <Link href={`/ticket/${event.event_id}`}>
                         <button className="bg-white text-indigo-600 hover:bg-indigo-50 px-6 py-2.5 rounded-full font-medium transition-all duration-300 shadow-lg">
