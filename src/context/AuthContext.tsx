@@ -12,6 +12,13 @@ interface User {
     creator_id: string;
     nama_brand: string;
   };
+  pembeli?: {
+    pembeli_id: string;
+    nama_pembeli: string;
+    jenis_kelamin: 'NOT_SET' | 'LAKI_LAKI' | 'PEREMPUAN';
+    tanggal_lahir: string;
+    foto_profil: string | null;
+  };
 }
 
 interface AuthContextType {
