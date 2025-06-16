@@ -105,35 +105,13 @@ export default function HomePage() {
   };
 
   // Filter events by category
-  const filterByCategory = (category: string) => {
-    setActiveCategory(category);
-    filterEvents(category, activeCity);
-
-    // If category is "All", we might want to refresh the featured events as well
-    if (category === "All") {
-      fetchEvents();
-    }
-  };
-
-  // Filter events by city
-  const filterByCity = (city: string) => {
-    setActiveCity(city);
-    filterEvents(activeCategory, city);
-
-    // If city is "All Cities", refresh the events
-    if (city === "All Cities") {
-      fetchEvents();
-    }
-  };
-
-  // Apply both filters
   const filterEvents = async (category: string, city: string) => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/events?limit=20");
+      const response = await fetch(`/api/events?limit=20`);
       const data = await response.json();
 
-      if (data.events && data.events.length > 0) {
+      if (data.events) {
         let filteredEvents = [...data.events];
 
         // Apply category filter if not "All"
@@ -147,7 +125,9 @@ export default function HomePage() {
         // Apply city filter if not "All Cities"
         if (city !== "All Cities") {
           filteredEvents = filteredEvents.filter((event) => {
-            const eventCity = event.kota_kabupaten.split(",")[0].trim();
+            const eventCity = (event.kota_kabupaten || event.lokasi)
+              .split(",")[0]
+              .trim();
             return eventCity.toLowerCase().includes(city.toLowerCase());
           });
         }
@@ -166,9 +146,6 @@ export default function HomePage() {
         setUpcomingEvents(
           filteredEvents.slice(0, Math.min(6, filteredEvents.length))
         );
-      } else {
-        setFeaturedEvents([]);
-        setUpcomingEvents([]);
       }
     } catch (error) {
       console.error("Failed to filter events:", error);
@@ -177,6 +154,18 @@ export default function HomePage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Filter events by category
+  const filterByCategory = (category: string) => {
+    setActiveCategory(category);
+    filterEvents(category, activeCity);
+  };
+
+  // Filter events by city
+  const filterByCity = (city: string) => {
+    setActiveCity(city);
+    filterEvents(activeCategory, city);
   };
 
   // Auto-sliding every 2 seconds for featured events
@@ -581,6 +570,35 @@ export default function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* Filter Status Display */}
+      {(activeCategory !== "All" || activeCity !== "All Cities") && (
+        <div className="container mx-auto px-4 pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+            <span>Filtered by:</span>
+            {activeCategory !== "All" && (
+              <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
+                {activeCategory}
+              </span>
+            )}
+            {activeCity !== "All Cities" && (
+              <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full">
+                {activeCity}
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setActiveCategory("All");
+                setActiveCity("All Cities");
+                fetchEvents();
+              }}
+              className="text-indigo-600 hover:text-indigo-800 underline ml-2"
+            >
+              Clear filters
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Event Cards - Enhanced with the same design as the events page */}
       <div className="container mx-auto px-4 py-8">

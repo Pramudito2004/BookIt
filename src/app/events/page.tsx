@@ -17,6 +17,7 @@ interface Event {
   tanggal_mulai: string;
   tanggal_selesai: string;
   lokasi: string;
+  kota_kabupaten: string;
   kategori_event: string;
   foto_event?: string;
   deskripsi?: string;
@@ -32,11 +33,39 @@ export default function EventsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCity, setActiveCity] = useState("All Cities");
   const eventsPerPage = 12;
+
+  // Categories from your system
+  const categories = [
+    { name: "All", icon: "🌟" },
+    { name: "Music", icon: "🎵" },
+    { name: "Sports", icon: "⚽" },
+    { name: "Arts", icon: "🖼️" },
+    { name: "Theater", icon: "🎭" },
+    { name: "Education", icon: "📚" },
+    { name: "Food & Beverage", icon: "🍔" },
+    { name: "Technology", icon: "🖥️" },
+    { name: "Lifestyle", icon: "👗" },
+    { name: "Health", icon: "🧘" },
+  ];
+
+  const cities = [
+    "All Cities",
+    "Jakarta",
+    "Surabaya",
+    "Bandung",
+    "Yogyakarta",
+    "Bali",
+    "Medan",
+    "Makassar",
+    "Semarang",
+  ];
 
   useEffect(() => {
     fetchEvents(currentPage);
-  }, [currentPage]);
+  }, [currentPage, activeCategory, activeCity]);
 
   const fetchEvents = async (page: number) => {
     setIsLoading(true);
@@ -45,14 +74,44 @@ export default function EventsPage() {
       const data = await response.json();
       
       if (data.events) {
-        setEvents(data.events);
-        setTotalPages(Math.ceil(data.total / eventsPerPage));
+        let filteredEvents = [...data.events];
+
+        // Apply category filter if not "All"
+        if (activeCategory !== "All") {
+          filteredEvents = filteredEvents.filter(
+            (event) =>
+              event.kategori_event.toLowerCase() === activeCategory.toLowerCase()
+          );
+        }
+
+        // Apply city filter if not "All Cities"
+        if (activeCity !== "All Cities") {
+          filteredEvents = filteredEvents.filter((event) => {
+            const eventCity = (event.kota_kabupaten || event.lokasi).split(",")[0].trim();
+            return eventCity.toLowerCase().includes(activeCity.toLowerCase());
+          });
+        }
+
+        setEvents(filteredEvents);
+        setTotalPages(Math.ceil(filteredEvents.length / eventsPerPage));
       }
     } catch (error) {
       console.error('Failed to fetch events:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Filter events by category
+  const filterByCategory = (category: string) => {
+    setActiveCategory(category);
+    setCurrentPage(1); // Reset to first page when filtering
+  };
+
+  // Filter events by city
+  const filterByCity = (city: string) => {
+    setActiveCity(city);
+    setCurrentPage(1); // Reset to first page when filtering
   };
 
   // Format date helper
@@ -297,7 +356,7 @@ export default function EventsPage() {
           <div className="max-w-3xl mx-auto text-center mb-8">
             {/* Static heading (removed animations) */}
             <h1 className="text-2xl md:text-4xl font-bold mb-3 text-white relative z-20">
-              Temukan Event Menarik di Sekitarmu
+              Semua Event Tersedia
             </h1>
             <motion.p
               className="text-white/80 text-sm md:text-base max-w-xl mx-auto"
@@ -341,8 +400,78 @@ export default function EventsPage() {
         </div>
       </header>
 
+      {/* Category Chips - Enhanced */}
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex overflow-x-auto pb-2 -mx-2 scrollbar-hide">
+          {categories.map((category, index) => (
+            <div key={index} className="flex-shrink-0 px-2">
+              <button
+                className={`flex items-center space-x-2 ${
+                  activeCategory === category.name
+                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                    : "bg-white text-gray-800 border border-gray-200 hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600"
+                } rounded-full px-5 py-2.5 text-sm transition-all duration-200 shadow-sm`}
+                onClick={() => filterByCategory(category.name)}
+              >
+                <span className="text-xl">{category.icon}</span>
+                <span className="font-medium">{category.name}</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Location Filter - Enhanced */}
+      <div className="container mx-auto px-4 pb-6">
+        <div className="flex overflow-x-auto pb-2 -mx-2 scrollbar-hide">
+          {cities.map((city, index) => (
+            <div key={index} className="flex-shrink-0 px-2">
+              <button
+                className={`flex items-center space-x-1 ${
+                  activeCity === city
+                    ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+                    : "bg-white text-gray-800 border border-gray-200 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200"
+                } rounded-full px-5 py-2.5 text-sm transition-all duration-200 font-medium shadow-sm`}
+                onClick={() => filterByCity(city)}
+              >
+                <span>{city}</span>
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Filter Status Display */}
+      {(activeCategory !== "All" || activeCity !== "All Cities") && (
+        <div className="container mx-auto px-4 pb-4">
+          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
+            <span>Filtered by:</span>
+            {activeCategory !== "All" && (
+              <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">
+                {activeCategory}
+              </span>
+            )}
+            {activeCity !== "All Cities" && (
+              <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full">
+                {activeCity}
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setActiveCategory("All");
+                setActiveCity("All Cities");
+                setCurrentPage(1);
+              }}
+              className="text-indigo-600 hover:text-indigo-800 underline ml-2"
+            >
+              Clear filters
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Enhanced Events Grid */}
-      <div className="container mx-auto px-4 py-16">
+      <div className="container mx-auto px-4 py-8">
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
@@ -351,10 +480,27 @@ export default function EventsPage() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center py-16"
+            className="text-center py-16 bg-white rounded-xl shadow-md"
           >
-            <h3 className="text-2xl font-medium text-gray-700">No events found</h3>
-            <p className="text-gray-500 mt-2">Check back later for new events</p>
+            <svg
+              className="w-16 h-16 mx-auto text-gray-400 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.5"
+                d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <h3 className="text-xl font-medium text-gray-700 mb-1">
+              Event tidak ditemukan
+            </h3>
+            <p className="text-gray-500">
+              Coba ganti filter Anda atau periksa lagi nanti
+            </p>
           </motion.div>
         ) : (
           <>
@@ -422,7 +568,7 @@ export default function EventsPage() {
                               d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
                             />
                           </svg>
-                          {event.lokasi}
+                          {event.kota_kabupaten || event.lokasi}
                         </div>
                         <div className="mt-auto flex justify-between items-center">
                           <span className="font-bold text-lg text-indigo-600">
