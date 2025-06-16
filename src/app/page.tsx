@@ -15,7 +15,7 @@ interface Event {
   nama_event: string;
   tanggal_mulai: string;
   tanggal_selesai: string;
-  lokasi: string;
+  kota_kabupaten: string;
   kategori_event: string;
   foto_event?: string;
   deskripsi?: string;
@@ -147,8 +147,8 @@ export default function HomePage() {
         // Apply city filter if not "All Cities"
         if (city !== "All Cities") {
           filteredEvents = filteredEvents.filter((event) => {
-            const eventCity = event.lokasi.split(",")[0].trim(); // Get first part of location (city)
-            return eventCity.toLowerCase() === city.toLowerCase();
+            const eventCity = event.kota_kabupaten.split(",")[0].trim();
+            return eventCity.toLowerCase().includes(city.toLowerCase());
           });
         }
 
@@ -621,10 +621,10 @@ export default function HomePage() {
               />
             </svg>
             <h3 className="text-xl font-medium text-gray-700 mb-1">
-              No events found
+              Event tidak ditemukan
             </h3>
             <p className="text-gray-500">
-              Try changing your filters or check back later
+              Coba ganti filter Anda atau periksa lagi nanti
             </p>
           </div>
         ) : (
@@ -713,7 +713,7 @@ export default function HomePage() {
                             d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
                           />
                         </svg>
-                        {event.lokasi}
+                        {event.kota_kabupaten}
                       </div>
                       <div className="mt-auto flex justify-between items-center">
                         <span className="font-bold text-lg text-indigo-600">

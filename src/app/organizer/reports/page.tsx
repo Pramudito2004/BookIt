@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Line, Bar } from "react-chartjs-2";
+import { Line, Bar, Pie } from "react-chartjs-2";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/app/components/sidebar";
@@ -15,6 +15,7 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -26,6 +27,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
@@ -143,13 +145,31 @@ export default function ReportsPage() {
   };
 
   const eventSalesData = {
-    labels: reportData.events.map(event => event.nama_event),
+    labels: reportData.events.map((event) => event.nama_event),
     datasets: [
       {
         label: "Penjualan Tiket",
-        data: reportData.events.map(event => event.tiketTerjual),
+        data: reportData.events.map((event) => event.tiketTerjual),
         backgroundColor: "rgba(99, 102, 241, 0.5)",
         borderColor: "rgb(99, 102, 241)",
+        borderWidth: 1,
+      },
+    ],
+  };
+
+  const statusDistributionData = {
+    labels: ["Selesai", "Berlangsung"],
+    datasets: [
+      {
+        data: [
+          reportData.events.filter((e) => e.status === "Selesai").length,
+          reportData.events.filter((e) => e.status === "Berlangsung").length,
+        ],
+        backgroundColor: [
+          "rgba(34, 197, 94, 0.5)",
+          "rgba(59, 130, 246, 0.5)",
+        ],
+        borderColor: ["rgb(34, 197, 94)", "rgb(59, 130, 246)"],
         borderWidth: 1,
       },
     ],
@@ -255,6 +275,31 @@ export default function ReportsPage() {
                 </div>
               </div>
 
+              {/* Time Range & Filter Controls */}
+              <div className="flex flex-wrap gap-4 mb-6">
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <select
+                    value={timeRange}
+                    onChange={(e) => setTimeRange(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  >
+                    <option value="monthly">Bulanan</option>
+                    <option value="weekly">Mingguan</option>
+                  </select>
+                </div>
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <select
+                    value={eventFilter}
+                    onChange={(e) => setEventFilter(e.target.value)}
+                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                  >
+                    <option value="all">Semua Event</option>
+                    <option value="active">Event Aktif</option>
+                    <option value="completed">Event Selesai</option>
+                  </select>
+                </div>
+              </div>
+
               {/* Charts */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div className="bg-white p-4 rounded-lg shadow-sm">
@@ -293,6 +338,113 @@ export default function ReportsPage() {
                         },
                       }}
                     />
+                  </div>
+                </div>
+              </div>
+
+              {/* Additional Charts Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                {/* Pie Chart - Status Distribution */}
+                <div className="bg-white p-4 rounded-lg shadow-sm">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Distribusi Status Event
+                  </h3>
+                  <div className="h-64">
+                    <Pie
+                      data={statusDistributionData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                          legend: {
+                            position: "bottom",
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Top Events by Revenue */}
+                <div className="bg-white p-4 rounded-lg shadow-sm lg:col-span-2">
+                  <h3 className="text-lg font-semibold mb-4">
+                    Top 5 Event Berdasarkan Pendapatan
+                  </h3>
+                  <div className="overflow-hidden">
+                    <table className="min-w-full">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                            Nama Event
+                          </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                            Pendapatan
+                          </th>
+                          <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                            Tiket Terjual
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reportData.events
+                          .sort((a, b) => b.pendapatan - a.pendapatan)
+                          .slice(0, 5)
+                          .map((event) => (
+                            <tr key={event.event_id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 text-sm text-gray-900">
+                                {event.nama_event}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-gray-900 text-right">
+                                Rp{event.pendapatan.toLocaleString()}
+                              </td>
+                              <td className="px-4 py-2 text-sm text-gray-900 text-right">
+                                {event.tiketTerjual}
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Event Performance Metrics */}
+              <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+                <h3 className="text-lg font-semibold mb-4">
+                  Metrik Performa Event
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-gray-500">
+                      Rata-rata Penjualan per Event
+                    </p>
+                    <p className="text-xl font-bold">
+                      {
+                        Math.round(
+                          reportData.statistics.totalTiketTerjual /
+                            reportData.events.length
+                        )
+                      }{" "}
+                      tiket
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-gray-500">
+                      Rata-rata Pendapatan per Event
+                    </p>
+                    <p className="text-xl font-bold">
+                      Rp
+                      {
+                        Math.round(
+                          reportData.statistics.totalPendapatan /
+                            reportData.events.length
+                        ).toLocaleString()
+                      }
+                    </p>
+                  </div>
+                  <div className="p-4 border rounded-lg">
+                    <p className="text-sm text-gray-500">Total Event</p>
+                    <p className="text-xl font-bold">{reportData.events.length}</p>
                   </div>
                 </div>
               </div>
