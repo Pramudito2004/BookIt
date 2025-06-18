@@ -40,6 +40,14 @@ export async function POST(request: NextRequest) {
       if (ticketType.jumlah_tersedia < validatedData.quantity) {
         throw new Error('Not enough tickets available')
       }
+
+      // Update jumlah_tersedia by subtracting the quantity being purchased
+      await tx.tipeTiket.update({
+        where: { tiket_type_id: validatedData.tiket_type_id },
+        data: {
+          jumlah_tersedia: ticketType.jumlah_tersedia - validatedData.quantity
+        }
+      });
       
       // Get event information for payment description
       const event = await tx.event.findUnique({
@@ -152,6 +160,7 @@ export async function POST(request: NextRequest) {
       message: 'Order created successfully',
       data: result
     }, { status: 201 })
+
   } catch (error: any) {
     console.error('Error creating order:', error)
     
@@ -159,6 +168,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ 
         error: 'Validation failed', 
         details: error.errors 
+      }, { status: 400 })
+    }
+
+    // Add more specific error handling
+    if (error.message === 'Not enough tickets available') {
+      return NextResponse.json({ 
+        error: 'Insufficient tickets', 
+        message: 'The requested number of tickets is not available' 
       }, { status: 400 })
     }
 
