@@ -141,29 +141,6 @@ export default function EventsPage() {
     return `Rp ${minPrice.toLocaleString('id-ID')} - ${maxPrice.toLocaleString('id-ID')}`;
   };
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: {
-      y: 0,
-      opacity: 1,
-      transition: {
-        type: "spring",
-        stiffness: 100
-      }
-    }
-  };
-
   // Particles initialization
   const particlesInit = useCallback(async (engine: Engine) => {
     await loadSlim(engine);
@@ -505,7 +482,15 @@ export default function EventsPage() {
         ) : (
           <>
             <motion.div 
-              variants={containerVariants}
+              variants={{     
+                hidden: { opacity: 0 },
+                visible: {
+                  opacity: 1,
+                  transition: {
+                    staggerChildren: 0.1
+                  }
+                } 
+              }}
               initial="hidden"
               animate="visible"
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
@@ -513,7 +498,17 @@ export default function EventsPage() {
               {events.map((event) => (
                 <motion.div
                   key={event.event_id}
-                  variants={itemVariants}
+                  variants= {{
+                    hidden: { y: 20, opacity: 0 },
+                    visible: {
+                      y: 0,
+                      opacity: 1,
+                      transition: {
+                        type: "spring",
+                        stiffness: 100
+                      }
+                    }
+                  }}
                   whileHover={{ y: -8 }}
                   className="h-full"
                 >
