@@ -1,17 +1,21 @@
 -- CreateEnum
-CREATE TYPE "JenisKelamin" AS ENUM ('LAKI_LAKI', 'PEREMPUAN');
+CREATE TYPE "JenisKelamin" AS ENUM ('MALE', 'FEMALE');
 
 -- CreateEnum
 CREATE TYPE "OrderStatus" AS ENUM ('PENDING', 'PAID', 'CANCELLED');
 
 -- CreateEnum
-CREATE TYPE "TiketStatus" AS ENUM ('AVAILABLE', 'BOOKED', 'SOLD', 'CANCELLED');
+CREATE TYPE "TiketStatus" AS ENUM ('AVAILABLE', 'SOLD');
 
 -- CreateTable
 CREATE TABLE "User" (
     "user_id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
+    "jenis_kelamin" "JenisKelamin" NOT NULL,
+    "tanggal_lahir" TIMESTAMP(3) NOT NULL,
+    "kontak" TEXT,
+    "foto_profil" TEXT,
     "deleted_at" TIMESTAMP(3),
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("user_id")
@@ -22,9 +26,6 @@ CREATE TABLE "Pembeli" (
     "pembeli_id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "nama_pembeli" TEXT NOT NULL,
-    "jenis_kelamin" "JenisKelamin" NOT NULL,
-    "tanggal_lahir" TIMESTAMP(3) NOT NULL,
-    "foto_profil" TEXT,
 
     CONSTRAINT "Pembeli_pkey" PRIMARY KEY ("pembeli_id")
 );
@@ -35,9 +36,7 @@ CREATE TABLE "EventCreator" (
     "user_id" TEXT NOT NULL,
     "nama_brand" TEXT NOT NULL,
     "deskripsi_creator" TEXT,
-    "foto_profil" TEXT,
     "no_rekening" TEXT,
-    "kontak" TEXT,
 
     CONSTRAINT "EventCreator_pkey" PRIMARY KEY ("creator_id")
 );
@@ -96,7 +95,6 @@ CREATE TABLE "Order" (
 CREATE TABLE "Pembayaran" (
     "payment_id" TEXT NOT NULL,
     "order_id" TEXT NOT NULL,
-    "invoice_id" TEXT,
     "jumlah" DECIMAL(65,30) NOT NULL,
     "status" TEXT NOT NULL,
     "waktu_transaksi" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
