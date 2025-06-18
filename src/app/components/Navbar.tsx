@@ -163,7 +163,7 @@ export default function Navbar() {
             <nav className="hidden md:flex items-center space-x-1">
               {user?.type === "creator" && (
                 <Link
-                  href="/organizer"
+                  href="organizer/event-saya"
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     isScrolled
                       ? "text-gray-700 hover:bg-gray-100"
@@ -290,7 +290,7 @@ export default function Navbar() {
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg overflow-hidden z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                     <div className="py-2">
                       <Link
-                        href="/profile"
+                        href="/customer/profile"
                         className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                       >
                         Profil Saya
@@ -306,7 +306,7 @@ export default function Navbar() {
                         </Link>
                       ) : (
                         <Link
-                          href="/organizer"
+                          href="organizer/event-saya"
                           className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                         >
                           Kelola Event
@@ -454,7 +454,7 @@ export default function Navbar() {
 
               {user?.type === "creator" && (
                 <Link
-                  href="/organizer"
+                  href="organizer/event-saya"
                   className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
@@ -479,7 +479,7 @@ export default function Navbar() {
                     <p className="text-white/70 text-sm">{user.email}</p>
                   </div>
                   <Link
-                    href="/profile"
+                    href="/customer/profile"
                     className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -497,7 +497,7 @@ export default function Navbar() {
                     </Link>
                   ) : (
                     <Link
-                      href="/organizer"
+                      href="organizer/event-saya"
                       className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                       onClick={() => setMobileMenuOpen(false)}
                     >
