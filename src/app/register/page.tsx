@@ -15,6 +15,9 @@ export default function RegisterPage() {
     email: "",
     password: "",
     confirmPassword: "",
+    phoneNumber: "", // Tambahkan nomor telepon
+    gender: "MALE", // Tambahkan gender (default)
+    dateOfBirth: "", // Tambahkan tanggal lahir
   });
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [passwordError, setPasswordError] = useState("");
@@ -29,7 +32,9 @@ export default function RegisterPage() {
     clearError();
   }, [user, router, clearError]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -57,7 +62,7 @@ export default function RegisterPage() {
     }
 
     try {
-      await register(formData.name, formData.email, formData.password);
+      await register(formData.name, formData.email, formData.password, formData.phoneNumber, formData.gender, formData.dateOfBirth);
 
       // Registration successful, redirect to login
       alert("Pendaftaran berhasil! Silakan login dengan akun Anda.");
@@ -156,7 +161,68 @@ export default function RegisterPage() {
                 />
               </div>
             </div>
+            <div>
+              <label
+                htmlFor="phoneNumber"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Nomor Telepon
+              </label>
+              <div className="mt-1">
+                <input
+                  id="phoneNumber"
+                  name="phoneNumber"
+                  type="tel"
+                  required
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                  placeholder="081234567890"
+                />
+              </div>
+            </div>
 
+            <div>
+              <label
+                htmlFor="gender"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Jenis Kelamin
+              </label>
+              <div className="mt-1">
+                <select
+                  id="gender"
+                  name="gender"
+                  required
+                  value={formData.gender}
+                  onChange={handleChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                >
+                  <option value="MALE">Laki-laki</option>
+                  <option value="FEMALE">Perempuan</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="dateOfBirth"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Tanggal Lahir
+              </label>
+              <div className="mt-1">
+                <input
+                  id="dateOfBirth"
+                  name="dateOfBirth"
+                  type="date"
+                  required
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                />
+              </div>
+            </div>
             <div>
               <label
                 htmlFor="password"
