@@ -4,10 +4,11 @@ import bcrypt from 'bcrypt';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params;
+
   try {
-    const { userId } = params;
     const { currentPassword, newPassword } = await request.json();
 
     if (!userId || !currentPassword || !newPassword) {
@@ -17,7 +18,6 @@ export async function PUT(
       );
     }
 
-    // Find user
     const user = await prisma.user.findUnique({
       where: {
         user_id: userId,
@@ -32,7 +32,6 @@ export async function PUT(
       );
     }
 
-    // Verify current password
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -41,10 +40,8 @@ export async function PUT(
       );
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update password
     await prisma.user.update({
       where: { user_id: userId },
       data: {
@@ -52,9 +49,7 @@ export async function PUT(
       },
     });
 
-    return NextResponse.json({
-      message: 'Password updated successfully'
-    });
+    return NextResponse.json({ message: 'Password updated successfully' });
 
   } catch (error) {
     console.error('Error updating password:', error);
