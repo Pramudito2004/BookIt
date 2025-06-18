@@ -19,7 +19,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string, phoneNumber: string, gender: string, dateOfBirth: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
@@ -92,7 +92,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (
+    name: string, 
+    email: string, 
+    password: string,
+    phoneNumber: string, 
+    gender: string,      
+    dateOfBirth: string  
+  ) => {
     setIsLoading(true);
     setError(null);
 
@@ -102,7 +109,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ name, email, password })
+        body: JSON.stringify({ 
+          name, 
+          email, 
+          password,
+          phoneNumber,
+          gender,
+          dateOfBirth
+         })
       });
 
       const data = await response.json();
