@@ -5,11 +5,11 @@ import prisma from '@/lib/prisma';
 // GET - Fetch user profile
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
-
+    const { userId } = await params;
+    
     if (!userId) {
       return NextResponse.json(
         { error: 'User ID is required' },
@@ -48,10 +48,10 @@ export async function GET(
 // PUT - Update user profile
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     const body = await request.json();
 
     if (!userId) {
@@ -166,10 +166,10 @@ export async function PUT(
 // DELETE - Soft delete user (mark as deleted)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { userId: string } }
-) {
+  { params }: { params: Promise<{ userId: string }> }
+){
   try {
-    const { userId } = params;
+    const { userId } = await params;
 
     if (!userId) {
       return NextResponse.json(
