@@ -420,13 +420,8 @@ useEffect(() => {
           <div className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 rounded-xl p-6 md:p-8 mb-8 text-white shadow-lg">
             <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
               <div className="flex items-center">
-                <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-full overflow-hidden border-4 border-white/30 mr-4 md:mr-6">
-                  <Image
-                    src={userProfile.avatar}
-                    alt="User avatar"
-                    fill
-                    className="object-cover"
-                  />
+                <div className="w-24 h-24 rounded-full border-4 border-white/30 flex items-center justify-center text-4xl font-medium text-white mr-6">
+                  {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : '?'}
                 </div>
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold mb-1">
