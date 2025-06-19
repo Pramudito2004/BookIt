@@ -1,28 +1,19 @@
-// src/app/api/tickets/verify/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
-    // Parse the incoming ticket code
     const { ticketCode } = await request.json();
-    
-    // Validate input
+
     if (!ticketCode) {
       return NextResponse.json(
-        { 
-          valid: false, 
-          message: 'Ticket code is required' 
-        },
+        { valid: false, message: 'Ticket code is required' },
         { status: 400 }
       );
     }
 
-    // Find the ticket by QR code
     const ticket = await prisma.tiket.findFirst({
-      where: { 
-        kode_qr: ticketCode 
-      },
+      where: { kode_qr: ticketCode },
       include: {
         tipe_tiket: {
           include: {
@@ -37,27 +28,27 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    // If ticket not found
     if (!ticket) {
       return NextResponse.json(
-        { 
-          valid: false, 
-          message: 'Invalid ticket code' 
-        },
+        { valid: false, message: 'Invalid ticket code' },
         { status: 404 }
       );
     }
 
-    // Check ticket status
-    switch (ticket.status) {
-      case 'SOLD':
-        return NextResponse.json({
-          valid: false,
-          message: 'This ticket has already been used'
-        });
+    // ✅ CEK apakah sudah digunakan
+    if (ticket.is_used) {
+      return NextResponse.json({
+        valid: false,
+        message: 'This ticket has already been used'
+      });
     }
 
-    // Prepare ticket details for response
+    // ✅ Tandai sebagai sudah digunakan
+    await prisma.tiket.update({
+      where: { tiket_id: ticket.tiket_id },
+      data: { is_used: true }
+    });
+
     return NextResponse.json({
       valid: true,
       message: 'Ticket is valid',
@@ -67,17 +58,14 @@ export async function POST(request: NextRequest) {
         ticketType: ticket.tipe_tiket.nama,
         buyerName: ticket.order.user.email,
         purchaseDate: ticket.dibuat_di,
-        status: ticket.status
+        status: ticket.order.status
       }
     });
 
   } catch (error) {
     console.error('Ticket verification error:', error);
     return NextResponse.json(
-      { 
-        valid: false, 
-        message: 'Ticket verification failed' 
-      },
+      { valid: false, message: 'Ticket verification failed' },
       { status: 500 }
     );
   }

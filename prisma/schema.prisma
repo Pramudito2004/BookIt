@@ -93,6 +93,7 @@ model Tiket {
   status            TiketStatus
   kode_qr           String?
   dibuat_di         DateTime  @default(now())
+  is_used           Boolean   @default(false)
 }
 
 model Order {
