@@ -7,7 +7,21 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import debounce from "lodash.debounce";
 
+// Add User interface
+
 export default function Navbar() {
+  interface User {
+    user_id: string;
+    email: string;
+    pembeli?: {
+      nama_pembeli: string;
+    };
+    event_creator?: {
+      nama_brand: string;
+    };
+  }
+
+  const [userProfile, setUserProfile] = useState<User | null>(null);
   // State for mobile menu
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -18,12 +32,14 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // State for search results
-  const [searchResults, setSearchResults] = useState<Array<{
-    event_id: string;
-    nama_event: string;
-    tanggal_mulai: string;
-    lokasi: string;
-  }>>([]);
+  const [searchResults, setSearchResults] = useState<
+    Array<{
+      event_id: string;
+      nama_event: string;
+      tanggal_mulai: string;
+      lokasi: string;
+    }>
+  >([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
 
   // Auth context
@@ -42,11 +58,13 @@ export default function Navbar() {
       }
 
       try {
-        const response = await fetch(`/api/events/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(
+          `/api/events/search?q=${encodeURIComponent(query)}`
+        );
         const data = await response.json();
         setSearchResults(data.events);
       } catch (error) {
-        console.error('Search error:', error);
+        console.error("Search error:", error);
         setSearchResults([]);
       }
     }, 300),
@@ -83,14 +101,17 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (navbarRef.current && !navbarRef.current.contains(event.target as Node)) {
+      if (
+        navbarRef.current &&
+        !navbarRef.current.contains(event.target as Node)
+      ) {
         setShowSearchResults(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -127,9 +148,45 @@ export default function Navbar() {
     if (searchQuery.trim()) {
       router.push(`/events/search?q=${encodeURIComponent(searchQuery)}`);
       setShowSearchResults(false);
-      setSearchQuery('');
+      setSearchQuery("");
       setMobileMenuOpen(false);
     }
+  };
+
+  // Add function to fetch user profile
+  const fetchUserProfile = async () => {
+    const userId = user?.id || user?.user_id;
+    if (!userId) return;
+
+    try {
+      const response = await fetch(`/api/user/profile/${userId}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch user profile");
+      }
+
+      const userData: User = await response.json();
+      setUserProfile(userData);
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  };
+
+  // Add useEffect to fetch profile when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      fetchUserProfile();
+    }
+  }, [user]);
+
+  // Add function to get display name
+  const getDisplayName = () => {
+    if (!userProfile) return "";
+    return (
+      userProfile.pembeli?.nama_pembeli ||
+      userProfile.event_creator?.nama_brand ||
+      "User"
+    );
   };
 
   return (
@@ -200,7 +257,7 @@ export default function Navbar() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === "Enter") {
                         handleSearch();
                       }
                     }}
@@ -230,34 +287,41 @@ export default function Navbar() {
                   </button>
 
                   {/* Search Results Dropdown */}
-                  {showSearchResults && searchResults && searchResults.length > 0 && (
-                    <div 
-                      className="absolute mt-2 w-96 bg-white rounded-lg shadow-xl overflow-hidden z-50"
-                      onMouseDown={(e) => e.preventDefault()}
-                    >
-                      <div className="max-h-96 overflow-y-auto">
-                        {searchResults.map((event) => (
-                          <Link
-                            key={event.event_id}
-                            href={`/ticket/${event.event_id}`}
-                            onClick={() => {
-                              setShowSearchResults(false);
-                              setSearchQuery('');
-                            }}
-                            className="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
-                          >
-                            <div className="text-sm font-medium text-gray-800">{event.nama_event}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                              <span className="inline-block mr-3">
-                                📅 {new Date(event.tanggal_mulai).toLocaleDateString('id-ID')}
-                              </span>
-                              <span>📍 {event.lokasi}</span>
-                            </div>
-                          </Link>
-                        ))}
+                  {showSearchResults &&
+                    searchResults &&
+                    searchResults.length > 0 && (
+                      <div
+                        className="absolute mt-2 w-96 bg-white rounded-lg shadow-xl overflow-hidden z-50"
+                        onMouseDown={(e) => e.preventDefault()}
+                      >
+                        <div className="max-h-96 overflow-y-auto">
+                          {searchResults.map((event) => (
+                            <Link
+                              key={event.event_id}
+                              href={`/ticket/${event.event_id}`}
+                              onClick={() => {
+                                setShowSearchResults(false);
+                                setSearchQuery("");
+                              }}
+                              className="block px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0"
+                            >
+                              <div className="text-sm font-medium text-gray-800">
+                                {event.nama_event}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                <span className="inline-block mr-3">
+                                  📅{" "}
+                                  {new Date(
+                                    event.tanggal_mulai
+                                  ).toLocaleDateString("id-ID")}
+                                </span>
+                                <span>📍 {event.lokasi}</span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
             </nav>
@@ -272,7 +336,7 @@ export default function Navbar() {
                       isScrolled ? "hover:bg-gray-100" : "hover:bg-white/10"
                     }`}
                   >
-                    <span className="mr-1">{user.name}</span>
+                    <span className="mr-1">{getDisplayName()}</span>
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -475,7 +539,7 @@ export default function Navbar() {
               {user ? (
                 <>
                   <div className="pt-3 pb-1 px-4 border-t border-white/20">
-                    <p className="text-white font-medium">{user.name}</p>
+                    <p className="text-white font-medium">{getDisplayName()}</p>
                     <p className="text-white/70 text-sm">{user.email}</p>
                   </div>
                   <Link
