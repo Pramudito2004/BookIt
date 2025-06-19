@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCoreApiInstance } from "@/lib/midtrans";
 import prisma from "@/lib/prisma";
+import { OrderStatus } from "@prisma/client";
 
 export async function GET(
   request: NextRequest,
@@ -16,7 +17,12 @@ export async function GET(
     if (status.transaction_status === "settlement") {
       await prisma.order.update({
         where: { order_id: orderId },
-        data: { status: "PAID" },
+        data: { status: OrderStatus.PAID },
+      });
+    } else if (["deny", "cancel", "expire"].includes(status.transaction_status)) {
+      await prisma.order.update({
+        where: { order_id: orderId },
+        data: { status: OrderStatus.CANCELLED },
       });
     }
 

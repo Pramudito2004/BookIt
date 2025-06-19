@@ -32,8 +32,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email sudah terdaftar' },
+      return new Response(
+        JSON.stringify({ 
+          error: 'EMAIL_EXISTS',
+          message: 'Email sudah terdaftar' 
+        }),
         { status: 400 }
       );
     }

@@ -3,6 +3,7 @@ import prisma from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { z } from 'zod'
 import { createSnapInstance } from '@/lib/midtrans';
+import { OrderStatus } from "@prisma/client";
 
 // Validation Schema for orders
 const OrderSchema = z.object({
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
         data: {
           user_id: validatedData.user_id,
           jumlah_total: validatedData.jumlah_total,
-          status: 'PAID', // Set to PENDING until payment is confirmed
+          status: OrderStatus.PENDING, // Mulai dengan PENDING
         }
       })
 
@@ -74,7 +75,7 @@ export async function POST(request: NextRequest) {
           data: {
             tiket_type_id: validatedData.tiket_type_id,
             order_id: order.order_id,
-            status: 'SOLD', // Will be updated after payment confirmation
+            status: 'AVAILABLE', // Ubah dari 'SOLD' ke 'AVAILABLE'
             kode_qr: `TICKET-${Date.now()}-${i}` // Generate a simple QR code reference
           }
         })
@@ -86,7 +87,7 @@ export async function POST(request: NextRequest) {
         data: {
           order_id: order.order_id,
           jumlah: validatedData.jumlah_total,
-          status: 'PAID', // Will be updated after payment confirmation
+          status: 'PENDING', // Ubah dari 'PAID' ke 'PENDING'
         }
       })
 

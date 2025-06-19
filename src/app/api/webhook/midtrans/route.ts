@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import prisma from "@/lib/prisma";
+import { OrderStatus } from "@prisma/client";
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,10 +31,10 @@ export async function POST(request: NextRequest) {
         data: { status: 'settlement' }
       });
 
-      // Update order status
+      // Update order status to PAID
       await prisma.order.update({
         where: { order_id: order.order_id },
-        data: { status: 'PAID' }
+        data: { status: OrderStatus.PAID }
       });
 
       // Update all tickets in the order to SOLD status
@@ -43,6 +44,23 @@ export async function POST(request: NextRequest) {
       });
 
       return NextResponse.json({ message: 'Payment processed successfully' });
+    } else if (payload.transaction_status === 'deny' || payload.transaction_status === 'cancel' || payload.transaction_status === 'expire') {
+      // Handle failed payments
+      const order = await prisma.order.findFirst({
+        where: {
+          order_id: payload.order_id
+        }
+      });
+
+      if (order) {
+        // Update order status to CANCELLED
+        await prisma.order.update({
+          where: { order_id: order.order_id },
+          data: { status: OrderStatus.CANCELLED }
+        });
+      }
+      
+      return NextResponse.json({ message: 'Payment cancelled' });
     }
 
     return NextResponse.json({ message: 'Notification received' });
