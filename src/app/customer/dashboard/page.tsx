@@ -9,6 +9,7 @@ import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { OrderStatus } from "@prisma/client";
 
 // Define ticket type
 interface Ticket {
@@ -65,7 +66,7 @@ interface ApiTicket {
   };
   order: {
     jumlah_total: number;
-    status: string;
+    status: OrderStatus; // Update this to use OrderStatus
   };
 }
 
@@ -312,12 +313,12 @@ useEffect(() => {
         ticketCode: ticket.kode_qr,
         price: `Rp ${ticket.tipe_tiket.harga.toLocaleString()}`,
         image: ticket.tipe_tiket.event.foto_event || "/api/placeholder/500/300",
-        status: mapStatus(ticket.status),
+        status: mapStatus(ticket.order.status), // Use order status instead of ticket status
         eventId: ticket.tipe_tiket.event.event_id,
       };
 
-      // Categorize as active or past
-      if (eventEndDate > now && ticket.status !== "CANCELLED") {
+      // Categorize as active or past based on event date and order status
+      if (eventEndDate > now && ticket.order.status !== "CANCELLED") {
         active.push(uiTicket);
       } else {
         past.push(uiTicket);
@@ -400,9 +401,9 @@ useEffect(() => {
   const mapStatus = (apiStatus: string) => {
     switch (apiStatus.toUpperCase()) {
       case "PENDING":
-        return "Pending";
+        return "PENDING";
       case "PAID":
-        return "Paid";
+        return "PAID"; 
       case "CANCELLED":
         return "Cancelled";
       default:
@@ -442,12 +443,12 @@ useEffect(() => {
 
   // Get the appropriate status badge color
   const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-      case "Paid":
-        return "bg-green-500 text-white";
-      case "Available":
+    switch (status.toUpperCase()) {
+      case "PENDING":
         return "bg-yellow-500 text-white";
-      case "Cancelled":
+      case "PAID":
+        return "bg-green-500 text-white";
+      case "CANCELLED":
         return "bg-red-500 text-white";
       default:
         return "bg-gray-500 text-white";

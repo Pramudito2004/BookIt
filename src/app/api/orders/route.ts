@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
         data: {
           user_id: validatedData.user_id,
           jumlah_total: validatedData.jumlah_total,
-          status: OrderStatus.PENDING, // Mulai dengan PENDING
+          status: OrderStatus.PENDING,
         }
       })
 
@@ -82,12 +82,12 @@ export async function POST(request: NextRequest) {
         tickets.push(ticket)
       }
 
-      // 4. Create payment record with PENDING status
+      // Create payment record
       const payment = await tx.pembayaran.create({
         data: {
           order_id: order.order_id,
           jumlah: validatedData.jumlah_total,
-          status: 'PENDING', // Ubah dari 'PAID' ke 'PENDING'
+          status: 'PENDING', // Keep payment status as 'pending'
         }
       })
 
