@@ -69,6 +69,24 @@ interface ApiTicket {
   };
 }
 
+// Tambahkan interface untuk user profile
+interface UserProfileData {
+  user_id: string;
+  email: string;
+  jenis_kelamin: 'MALE' | 'FEMALE';
+  tanggal_lahir: string;
+  kontak: string | null;
+  foto_profil: string | null;
+  pembeli?: {
+    nama_pembeli: string;
+  };
+  event_creator?: {
+    nama_brand: string;
+    deskripsi_creator: string | null;
+    no_rekening: string | null;
+  };
+}
+
 export default function CustomerDashboard() {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -91,6 +109,12 @@ export default function CustomerDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const getDisplayName = () => {
+  if (!userProfile) return "";
+  return userProfile.name || userProfile.email ||
+   "User";
+  };
+
   // Get stored tickets from Zustand
   const {
     tickets: storedTickets,
@@ -103,14 +127,37 @@ export default function CustomerDashboard() {
     if (!user) {
       router.push('/login?redirectTo=/customer/dashboard');
     } else {
-      // Update user profile if available
-      setUserProfile(prev => ({
-        ...prev,
-        name: user.name || prev.name,
-        email: user.email || prev.email,
-      }));
+      fetchUserProfile(); // Panggil fungsi fetch profile
     }
   }, [user, router]);
+
+  // Tambahkan fungsi untuk mengambil data profile
+  const fetchUserProfile = async () => {
+    const userId = user?.id || user?.user_id;
+    if (!userId) return;
+
+    try {
+      const response = await fetch(`/api/user/profile/${userId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch user profile');
+      }
+
+      const userData: UserProfileData = await response.json();
+      
+      // Update user profile dengan nama yang sesuai
+      setUserProfile(prev => ({
+        ...prev,
+        name: userData.pembeli?.nama_pembeli || 
+              userData.event_creator?.nama_brand || 
+              prev.name,
+        email: userData.email || prev.email,
+      }));
+
+    } catch (err) {
+      console.error("Error fetching user profile:", err);
+    }
+  };
 
 useEffect(() => {
   if (!user) return;
@@ -352,12 +399,10 @@ useEffect(() => {
   // Map API status to UI status
   const mapStatus = (apiStatus: string) => {
     switch (apiStatus.toUpperCase()) {
-      case "AVAILABLE":
+      case "PENDING":
         return "Pending";
-      case "SOLD":
-        return "Paid";  // Will show "Paid" for SOLD status
-      case "CHECKED_IN":
-        return "Checked In";
+      case "PAID":
+        return "Paid";
       case "CANCELLED":
         return "Cancelled";
       default:
@@ -425,7 +470,7 @@ useEffect(() => {
                 </div>
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold mb-1">
-                    {userProfile.name}
+                    {getDisplayName()}
                   </h1>
                   <p className="text-white/80">{userProfile.email}</p>
                 </div>
@@ -547,13 +592,19 @@ useEffect(() => {
                   {tickets[activeTab].length === 0 && !error && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                       <div className="mx-auto w-16 h-16 mb-4 text-gray-300">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" 
-                            d={activeTab === "active"
-                              ? "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                              : "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"} 
-                          />
-                        </svg>
+                <svg 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24" 
+                  className="w-6 h-6"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                  />
+                </svg>
                       </div>
                       <h3 className="text-lg font-medium text-gray-800 mb-2">
                         {activeTab === "active" 

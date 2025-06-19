@@ -290,8 +290,10 @@ export default function CreateEventPage() {
   };
 
   const nextStep = () => {
+  if (validateStep()) {
     setCurrentStep(currentStep + 1);
-  };
+  }
+};
 
   const prevStep = () => {
     setCurrentStep(currentStep - 1);
@@ -355,6 +357,42 @@ export default function CreateEventPage() {
         );
       }
     }
+  };
+  const validateStep = (): boolean => {
+    const newErrors: { [key: string]: string } = {};
+
+    if (currentStep === 1) {
+      if (!formData.nama_event.trim()) newErrors.nama_event = "Nama event wajib diisi";
+      if (!formData.kategori_event) newErrors.kategori_event = "Kategori event wajib dipilih";
+    }
+
+if (currentStep === 2) {
+      if (!formData.tanggal_mulai) newErrors.tanggal_mulai = "Tanggal mulai wajib diisi";
+      if (!formData.tanggal_selesai) newErrors.tanggal_selesai = "Tanggal selesai wajib diisi";
+      if (!formData.kota_kabupaten) newErrors.kota_kabupaten = "Kota wajib diisi";
+      if (!formData.lokasi) newErrors.lokasi = "Detail lokasi wajib diisi";
+      
+      const start = new Date(formData.tanggal_mulai);
+      const end = new Date(formData.tanggal_selesai);
+      if (start && end && end < start) {
+        newErrors.tanggal_selesai = "Tanggal selesai tidak boleh lebih awal dari tanggal mulai";
+      }
+    }
+
+    if (currentStep === 3) {
+      if (!formData.tipe_tikets || formData.tipe_tikets.length === 0) {
+        newErrors.tipe_tikets = "Minimal satu jenis tiket harus ditambahkan";
+      } else {
+        formData.tipe_tikets.forEach((tiket, index) => {
+          if (!tiket.nama.trim()) newErrors[`tipe_tikets[${index}].nama`] = "Nama tiket wajib diisi";
+          if (tiket.harga <= 0) newErrors[`tipe_tikets[${index}].harga`] = "Harga tiket harus lebih dari 0";
+          if (tiket.jumlah_tersedia <= 0) newErrors[`tipe_tikets[${index}].jumlah_tersedia`] = "Jumlah tiket harus lebih dari 0";
+        });
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   if (isLoading) {

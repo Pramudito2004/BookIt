@@ -6,6 +6,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 interface User {
   id: string;
   email: string;
+  user_id?: string; // Add optional user_id field
   name: string;
   type: 'customer' | 'creator';
   event_creator?: {
