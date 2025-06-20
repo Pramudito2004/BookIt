@@ -170,7 +170,7 @@ export default function Navbar() {
                       : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  Kelola Event
+                  Manage Events
                 </Link>
               )}
 
@@ -183,7 +183,7 @@ export default function Navbar() {
                       : "text-white/80 hover:text-white hover:bg-white/10"
                   }`}
                 >
-                  Tiket Saya
+                  My Tickets
                 </Link>
               )}
 
@@ -191,7 +191,7 @@ export default function Navbar() {
                 <div className="relative group">
                   <input
                     type="text"
-                    placeholder="Cari event..."
+                    placeholder="Search events..."
                     className={`w-64 pl-4 pr-12 py-2 text-sm rounded-full border transition-all duration-200 focus:outline-none focus:ring-2 ${
                       isScrolled
                         ? "bg-gray-50 border-gray-200 focus:ring-indigo-500 text-gray-800"
@@ -293,7 +293,7 @@ export default function Navbar() {
                         href="/customer/profile"
                         className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                       >
-                        Profil Saya
+                        My Profile
                       </Link>
 
                       {/* Show appropriate menu based on user type */}
@@ -302,14 +302,14 @@ export default function Navbar() {
                           href="/customer/dashboard"
                           className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                         >
-                          Tiket Saya
+                          My Tickets
                         </Link>
                       ) : (
                         <Link
                           href="organizer/event-saya"
                           className="block px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                         >
-                          Kelola Event
+                          Manage Events
                         </Link>
                       )}
 
@@ -321,14 +321,14 @@ export default function Navbar() {
                           onClick={() => handleSwitchAccountType("creator")}
                           className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                         >
-                          Beralih ke Event Creator
+                          Switch to Event Creator
                         </button>
                       ) : (
                         <button
                           onClick={() => handleSwitchAccountType("customer")}
                           className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                         >
-                          Beralih ke Akun Pembeli
+                          Switch to Customer Account
                         </button>
                       )}
 
@@ -337,7 +337,7 @@ export default function Navbar() {
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-gray-800 hover:bg-indigo-50 hover:text-indigo-600"
                       >
-                        Keluar
+                        Logout
                       </button>
                     </div>
                   </div>
@@ -353,7 +353,7 @@ export default function Navbar() {
                         : "text-white border border-white/60 hover:bg-white hover:text-indigo-600"
                     }`}
                   >
-                    Masuk
+                    Login
                   </button>
                 </Link>
 
@@ -365,7 +365,7 @@ export default function Navbar() {
                         : "bg-white text-indigo-600 hover:bg-indigo-100"
                     }`}
                   >
-                    Daftar
+                    Register
                   </button>
                 </Link>
               </>
@@ -418,7 +418,7 @@ export default function Navbar() {
               <div className="relative px-4 py-2">
                 <input
                   type="text"
-                  placeholder="Cari event..."
+                  placeholder="Search events..."
                   className="w-full px-4 pr-12 py-2 text-sm rounded-full bg-white/10 border border-transparent text-white placeholder-white/70 focus:outline-none focus:ring-2 focus:ring-white/50"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -458,7 +458,7 @@ export default function Navbar() {
                   className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Kelola Event
+                  Manage Events
                 </Link>
               )}
 
@@ -468,7 +468,7 @@ export default function Navbar() {
                   className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  Tiket Saya
+                  My Tickets
                 </Link>
               )}
 
@@ -483,7 +483,7 @@ export default function Navbar() {
                     className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    Profil Saya
+                    My Profile
                   </Link>
 
                   {/* Show appropriate menu based on user type */}
@@ -493,7 +493,7 @@ export default function Navbar() {
                       className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Tiket Saya
+                      My Tickets
                     </Link>
                   ) : (
                     <Link
@@ -501,7 +501,7 @@ export default function Navbar() {
                       className="px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Kelola Event
+                      Manage Events
                     </Link>
                   )}
 
@@ -515,7 +515,7 @@ export default function Navbar() {
                       }}
                       className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                     >
-                      Beralih ke Event Creator
+                      Switch to Event Creator
                     </button>
                   ) : (
                     <button
@@ -525,7 +525,7 @@ export default function Navbar() {
                       }}
                       className="w-full text-left px-4 py-2 text-white hover:bg-white/10 rounded-lg"
                     >
-                      Beralih ke Akun Pembeli
+                      Switch to Customer Account
                     </button>
                   )}
 
@@ -533,7 +533,7 @@ export default function Navbar() {
                     onClick={handleLogout}
                     className="px-4 py-2 text-left text-white hover:bg-white/10 rounded-lg"
                   >
-                    Keluar
+                    Logout
                   </button>
                 </>
               ) : (
@@ -543,7 +543,7 @@ export default function Navbar() {
                       className="w-full text-sm py-2 px-4 text-white border border-white/60 rounded-full hover:bg-white/10"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Masuk
+                      Login
                     </button>
                   </Link>
                   <Link href="/register">
@@ -551,7 +551,7 @@ export default function Navbar() {
                       className="w-full text-sm py-2 px-4 bg-white text-indigo-600 rounded-full"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Daftar
+                      Register
                     </button>
                   </Link>
                 </div>

@@ -531,7 +531,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     name="nama_event"
                     value={formData.nama_event}
                     onChange={handleChange}
-                    placeholder="Masukkan nama event"
+                    placeholder="Enter event name"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   />
@@ -741,8 +741,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                   </div>
 
                   <p className="text-sm text-gray-500 mt-2">
-                    * Anda dapat menambahkan gambar venue map dengan mengklik
-                    tombol gambar di toolbar
+                    * You can add venue map images by clicking the image button in
+                    the toolbar
                   </p>
                 </div>
 
@@ -757,7 +757,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
                     required
                   >
-                    <option value="">Pilih kategori</option>
+                    <option value="">Select category</option>
                     {EVENT_CATEGORIES.map((category) => (
                       <option key={category} value={category}>
                         {category}
@@ -827,7 +827,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                           />
                         </svg>
                         <p className="mt-2 text-sm text-gray-500">
-                          Unggah foto untuk event Anda
+                          Upload photo for your event
                         </p>
                       </div>
                     )}
@@ -845,13 +845,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                         className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                       >
                         {selectedImage
-                          ? "Ganti Gambar"
+                          ? "Change Image"
                           : formData.foto_event
-                          ? "Ganti Gambar"
-                          : "Upload Gambar"}
+                          ? "Change Image"
+                          : "Upload Image"}
                       </label>
                       <p className="text-xs text-gray-500 ml-3">
-                        Format: JPG, PNG. Maks: 2MB
+                        Format: JPG, PNG. Max: 2MB
                       </p>
                     </div>
                   </div>
@@ -933,7 +933,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                           setIsDropdownOpen(true);
                         }}
                         onFocus={() => setIsDropdownOpen(true)}
-                        placeholder="Cari kota/kabupaten..."
+                        placeholder="Search city/region..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
 
@@ -952,7 +952,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                             ))
                           ) : (
                             <div className="px-4 py-2 text-gray-500">
-                              Tidak ada hasil yang ditemukan
+                              No results found
                             </div>
                           )}
                         </div>
@@ -969,7 +969,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                         name="lokasi"
                         value={formData.lokasi}
                         onChange={handleChange}
-                        placeholder="Masukkan nama gedung, alamat lengkap, dll"
+                        placeholder="Enter venue name, complete address, etc."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
@@ -1036,7 +1036,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                           name="nama"
                           value={ticket.nama}
                           onChange={(e) => handleTicketChange(index, e)}
-                          placeholder="Mis. VIP, Regular, Early Bird"
+                          placeholder="E.g. VIP, Regular, Early Bird"
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                           required
                         />

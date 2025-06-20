@@ -128,7 +128,7 @@ export default function EventsPage() {
   // Get ticket price range
   const getTicketPriceText = (event: Event) => {
     if (!event.tipe_tikets || event.tipe_tikets.length === 0) {
-      return "Gratis";
+      return "Free";
     }
     
     const prices = event.tipe_tikets.map(ticket => ticket.harga);
@@ -136,9 +136,9 @@ export default function EventsPage() {
     const maxPrice = Math.max(...prices);
     
     if (minPrice === maxPrice) {
-      return `Rp ${minPrice.toLocaleString('id-ID')}`;
+      return `IDR ${minPrice.toLocaleString('en-US')}`;
     }
-    return `Rp ${minPrice.toLocaleString('id-ID')} - ${maxPrice.toLocaleString('id-ID')}`;
+    return `IDR ${minPrice.toLocaleString('en-US')} - ${maxPrice.toLocaleString('en-US')}`;
   };
 
   // Particles initialization
@@ -333,7 +333,7 @@ export default function EventsPage() {
           <div className="max-w-3xl mx-auto text-center mb-8">
             {/* Static heading (removed animations) */}
             <h1 className="text-2xl md:text-4xl font-bold mb-3 text-white relative z-20">
-              Semua Event Tersedia
+              All Available Events
             </h1>
             <motion.p
               className="text-white/80 text-sm md:text-base max-w-xl mx-auto"
@@ -341,8 +341,7 @@ export default function EventsPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              Jelajahi ratusan event konser, workshop, pameran, dan festival di
-              seluruh Indonesia
+              Explore hundreds of concerts, workshops, exhibitions, and festivals across Indonesia
             </motion.p>
           </div>
         </div>
@@ -473,10 +472,10 @@ export default function EventsPage() {
               />
             </svg>
             <h3 className="text-xl font-medium text-gray-700 mb-1">
-              Event tidak ditemukan
+              No Events Found
             </h3>
             <p className="text-gray-500">
-              Coba ganti filter Anda atau periksa lagi nanti
+              Try changing your filters or check back later
             </p>
           </motion.div>
         ) : (

@@ -40,8 +40,7 @@ export default function Footer() {
               <span className="text-xl font-bold">BookIt</span>
             </div>
             <p className="text-gray-400 text-sm mb-6">
-              Platform pembelian tiket online terpercaya untuk berbagai event di
-              seluruh Indonesia.
+              Trusted online ticketing platform for various events across Indonesia.
             </p>
             <div className="flex space-x-4">
               <a
@@ -84,7 +83,7 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold text-lg mb-4">Bantuan</h4>
+            <h4 className="font-bold text-lg mb-4">Help</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
                 <a
@@ -104,7 +103,7 @@ export default function Footer() {
                       d="M9 5l7 7-7 7"
                     ></path>
                   </svg>
-                  Cara Pembelian
+                  How to Purchase
                 </a>
               </li>
               <li>
@@ -125,7 +124,7 @@ export default function Footer() {
                       d="M9 5l7 7-7 7"
                     ></path>
                   </svg>
-                  Cara Pembayaran
+                  Payment Methods
                 </a>
               </li>
               <li>
@@ -167,14 +166,14 @@ export default function Footer() {
                       d="M9 5l7 7-7 7"
                     ></path>
                   </svg>
-                  Hubungi Kami
+                  Contact Us
                 </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-bold text-lg mb-4">Tentang</h4>
+            <h4 className="font-bold text-lg mb-4">About</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li>
                 <a
@@ -194,7 +193,7 @@ export default function Footer() {
                       d="M9 5l7 7-7 7"
                     ></path>
                   </svg>
-                  Tentang Kami
+                  About Us
                 </a>
               </li>
               <li>
@@ -215,7 +214,7 @@ export default function Footer() {
                       d="M9 5l7 7-7 7"
                     ></path>
                   </svg>
-                  Karir
+                  Careers
                 </a>
               </li>
               <li>
@@ -236,7 +235,7 @@ export default function Footer() {
                       d="M9 5l7 7-7 7"
                     ></path>
                   </svg>
-                  Kebijakan Privasi
+                  Privacy Policy
                 </a>
               </li>
               <li>
@@ -257,21 +256,21 @@ export default function Footer() {
                       d="M9 5l7 7-7 7"
                     ></path>
                   </svg>
-                  Syarat dan Ketentuan
+                  Terms and Conditions
                 </a>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-bold text-lg mb-4">Ikuti Kami</h4>
+            <h4 className="font-bold text-lg mb-4">Follow Us</h4>
             <p className="text-gray-400 text-sm mb-4">
-              Dapatkan info terbaru tentang event dan promo spesial
+              Get the latest updates about events and special promotions
             </p>
             <div className="flex items-center">
               <input
                 type="email"
-                placeholder="Email Kamu"
+                placeholder="Your Email"
                 className="py-2 px-4 bg-gray-800 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white text-sm flex-grow"
               />
               <button className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-4 rounded-r-lg font-medium text-sm">

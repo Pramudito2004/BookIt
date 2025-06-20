@@ -406,7 +406,7 @@ export default function HomePage() {
           <div className="max-w-3xl mx-auto text-center mb-8">
             {/* Static heading (removed animations) */}
             <h1 className="text-2xl md:text-4xl font-bold mb-3 text-white relative z-20">
-              Temukan Event Menarik di Sekitarmu
+              Find Interesting Events Around You
             </h1>
             <motion.p
               className="text-white/80 text-sm md:text-base max-w-xl mx-auto"
@@ -414,8 +414,7 @@ export default function HomePage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              Jelajahi ratusan event konser, workshop, pameran, dan festival di
-              seluruh Indonesia
+              Explore hundreds of concerts, workshops, exhibitions, and festivals across Indonesia
             </motion.p>
           </div>
         </div>
@@ -639,10 +638,10 @@ export default function HomePage() {
               />
             </svg>
             <h3 className="text-xl font-medium text-gray-700 mb-1">
-              Event tidak ditemukan
+              Event not found
             </h3>
             <p className="text-gray-500">
-              Coba ganti filter Anda atau periksa lagi nanti
+              No upcoming events match your filters. Try changing the filters or check back later.
             </p>
           </div>
         ) : (
@@ -752,7 +751,7 @@ export default function HomePage() {
         <div className="text-center mt-10">
           <Link href="/events">
             <button className="border-2 border-indigo-600 text-indigo-600 px-8 py-3 rounded-full hover:bg-indigo-50 transition-all duration-300 font-medium">
-              Lihat Semua Event
+              View All Events
             </button>
           </Link>
         </div>

@@ -199,22 +199,22 @@ export default function EventDetailPage() {
     }
   };
 
-  // Validate form before submission
+  // Form validation messages
   const validateForm = (): boolean => {
     const errors: Partial<CheckoutFormData> = {};
 
     if (!formData.fullName.trim()) {
-      errors.fullName = "Nama lengkap diperlukan";
+      errors.fullName = "Full name is required";
     }
 
     if (!formData.email.trim()) {
-      errors.email = "Email diperlukan";
+      errors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = "Format email tidak valid";
+      errors.email = "Invalid email format";
     }
 
     if (!formData.phone.trim()) {
-      errors.phone = "Nomor telepon diperlukan";
+      errors.phone = "Phone number is required";
     }
 
     setFormErrors(errors);
@@ -249,8 +249,9 @@ export default function EventDetailPage() {
     router.push(`/payment/pending?order_id=${orderData?.order?.order_id}`);
   };
 
+  // Error messages
   const handlePaymentError = () => {
-    setPaymentError("Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.");
+    setPaymentError("An error occurred while processing the payment. Please try again.");
     setIsProcessing(false);
     setSnapToken(null);
     setShowMidtransSnap(false);
@@ -349,16 +350,16 @@ export default function EventDetailPage() {
         <div className="container mx-auto px-4 py-24 text-center">
           <div className="bg-white p-8 rounded-xl shadow-md max-w-lg mx-auto">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">
-              Event Tidak Ditemukan
+              Event Not Found
             </h1>
             <p className="text-gray-600 mb-6">
-              {error || "Kami tidak dapat menemukan acara yang Anda cari."}
+              {error || "We couldn't find the event you're looking for."}
             </p>
             <button
               onClick={() => router.push("/")}
               className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
             >
-              Kembali ke Beranda
+              Back to Home
             </button>
           </div>
         </div>
@@ -423,7 +424,7 @@ export default function EventDetailPage() {
           </div>
           {event.creator && (
             <div className="flex items-center text-white/90">
-              <span className="mr-2">Diselenggarakan oleh:</span>
+              <span className="mr-2">Organized by:</span>
               <span className="font-medium">{event.creator.nama_brand}</span>
             </div>
           )}
@@ -438,8 +439,8 @@ export default function EventDetailPage() {
             {/* Navigation Tabs */}
             <div className="flex border-b border-gray-200 mb-6">
               {[
-                { id: "description", label: "Deskripsi" },
-                { id: "location", label: "Lokasi" },
+                { id: "description", label: "Description" },
+                { id: "location", label: "Location" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -461,7 +462,7 @@ export default function EventDetailPage() {
               {activeTab === "description" && (
                 <div>
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                    Tentang Acara Ini
+                    About This Event
                   </h2>
                   <div
                     className="prose prose-indigo max-w-none text-gray-700"
@@ -474,7 +475,7 @@ export default function EventDetailPage() {
               {activeTab === "location" && (
                 <div>
                   <h2 className="text-2xl font-bold mb-4 text-gray-800">
-                    Lokasi Acara
+                    Event Location
                   </h2>
                   <div className="bg-gray-100 p-4 rounded-lg mb-6">
                     <h3 className="font-bold mb-2 text-gray-800">
@@ -491,7 +492,7 @@ export default function EventDetailPage() {
           <div className="lg:w-1/3 mt-8 lg:mt-0">
             <div className="bg-white p-6 rounded-xl shadow-sm sticky top-24">
               <h2 className="text-xl font-bold mb-4 text-gray-800">
-                Pilih Tiket
+                Select Tickets
               </h2>
 
               {/* Ticket Type Selection */}
@@ -519,10 +520,10 @@ export default function EventDetailPage() {
                       </div>
                       <p className="text-sm text-gray-600">
                         {ticket.deskripsi ||
-                          `${ticket.nama} tiket untuk ${event.nama_event}`}
+                          `${ticket.nama} ticket for ${event.nama_event}`}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Tersisa {ticket.jumlah_tersedia} tiket
+                        {ticket.jumlah_tersedia} tickets available
                       </p>
                     </div>
                   ))}
@@ -530,7 +531,7 @@ export default function EventDetailPage() {
               ) : (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
                   <p className="text-yellow-700 text-sm">
-                    Tidak ada tiket yang tersedia untuk acara ini saat ini.
+                    No tickets are currently available for this event.
                   </p>
                 </div>
               )}
@@ -540,7 +541,7 @@ export default function EventDetailPage() {
                 <>
                   <div className="mb-6">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Jumlah Tiket
+                      Ticket Quantity
                     </label>
                     <div className="flex items-center">
                       <button
@@ -598,7 +599,7 @@ export default function EventDetailPage() {
                   {/* Price Summary */}
                   <div className="border-t border-gray-200 pt-4 mb-6">
                     <div className="flex justify-between mb-2 text-gray-800">
-                      <span className="text-gray-600">Harga per tiket</span>
+                      <span className="text-gray-600">Price per ticket</span>
                       <span>
                         {selectedTicket
                           ? `Rp${selectedTicket.harga.toLocaleString()}`
@@ -606,7 +607,7 @@ export default function EventDetailPage() {
                       </span>
                     </div>
                     <div className="flex justify-between mb-2 text-gray-800">
-                      <span className="text-gray-600">Jumlah</span>
+                      <span className="text-gray-600">Quantity</span>
                       <span>{ticketQuantity}</span>
                     </div>
                     <div className="flex justify-between font-bold text-lg text-gray-800">
@@ -625,7 +626,7 @@ export default function EventDetailPage() {
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
                   >
-                    {user ? "Beli Tiket" : "Login untuk Membeli"}
+                    {user ? "Buy Tickets" : "Login to Purchase"}
                   </button>
                 </>
               )}
@@ -652,7 +653,7 @@ export default function EventDetailPage() {
             <div className="p-6 flex flex-col">
               {/* Header */}
               <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold">Selesaikan Pembelian Anda</h3>
+                <h3 className="text-xl font-bold">Complete Your Purchase</h3>
                 <button
                   onClick={() => setIsCheckoutOpen(false)}
                   className="text-gray-500 hover:text-gray-700"
@@ -692,21 +693,21 @@ export default function EventDetailPage() {
                       />
                     </svg>
                     <h4 className="text-xl font-bold mb-2">
-                      Pemesanan Berhasil!
+                      Booking Successful!
                     </h4>
-                    <p>Tiket Anda telah berhasil dipesan.</p>
+                    <p>Your tickets have been successfully booked.</p>
                     <p className="mt-2 text-sm">
-                      ID Pesanan: {orderData?.order?.order_id}
+                      Order ID: {orderData?.order?.order_id}
                     </p>
                     <p className="mt-2 text-sm">
-                      Email konfirmasi telah dikirim ke alamat email Anda.
+                      A confirmation email has been sent to your email address.
                     </p>
                   </div>
                   <Link
                     href="/customer/dashboard"
                     className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors inline-block mt-4"
                   >
-                    Lihat Tiket Saya
+                    View My Tickets
                   </Link>
                 </div>
               ) : (
@@ -760,7 +761,7 @@ export default function EventDetailPage() {
                   <div className="space-y-4 mb-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nama Lengkap
+                        Full Name
                       </label>
                       <input
                         type="text"
@@ -772,7 +773,7 @@ export default function EventDetailPage() {
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                        placeholder="Masukkan nama lengkap"
+                        placeholder="Enter full name"
                         disabled={isProcessing}
                       />
                       {formErrors.fullName && (
@@ -783,7 +784,7 @@ export default function EventDetailPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Alamat Email
+                        Email Address
                       </label>
                       <input
                         type="email"
@@ -795,7 +796,7 @@ export default function EventDetailPage() {
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                        placeholder="Masukkan alamat email"
+                        placeholder="Enter email address"
                         disabled={isProcessing}
                       />
                       {formErrors.email && (
@@ -806,7 +807,7 @@ export default function EventDetailPage() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nomor Telepon
+                        Phone Number
                       </label>
                       <input
                         type="tel"
@@ -818,7 +819,7 @@ export default function EventDetailPage() {
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
-                        placeholder="Masukkan nomor telepon"
+                        placeholder="Enter phone number"
                         disabled={isProcessing}
                       />
                       {formErrors.phone && (
@@ -831,7 +832,7 @@ export default function EventDetailPage() {
 
                   {/* Payment Method */}
                   <div className="mb-6">
-                    <h4 className="font-medium mb-2">Metode Pembayaran</h4>
+                    <h4 className="font-medium mb-2">Payment Method</h4>
                     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-4">
                       <div className="flex items-center">
                         <div className="flex-shrink-0 mr-3">
@@ -852,7 +853,7 @@ export default function EventDetailPage() {
                         <div>
                           <p className="font-medium">Midtrans Payment Gateway</p>
                           <p className="text-xs text-gray-500">
-                            Bayar dengan berbagai metode: Kartu Kredit, Virtual Account, E-Wallet, dan lainnya
+                            Pay with various methods: Credit Card, Virtual Account, E-Wallet, and more
                           </p>
                         </div>
                       </div>
@@ -870,15 +871,15 @@ export default function EventDetailPage() {
                     {isProcessing ? (
                       <div className="flex items-center justify-center">
                         <div className="w-5 h-5 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></div>
-                        Memproses...
+                        Processing...
                       </div>
                     ) : (
-                      "Bayar Sekarang"
+                      "Pay Now"
                     )}
                   </button>
 
                   <p className="text-center text-xs text-gray-500 mt-4">
-                    Dengan menyelesaikan pembelian ini, Anda menyetujui Syarat dan Ketentuan kami.
+                    By completing this purchase, you agree to our Terms and Conditions.
                   </p>
                 </>
               )}

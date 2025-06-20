@@ -17,11 +17,11 @@ export default function AdminDashboard() {
   
   // Dummy data for dashboard statistics
   const stats = [
-    { id: 1, title: "Event Aktif", value: "124", change: "", icon: "📅" },
-    { id: 2, title: "Total Penjualan", value: "Rp 1.25M", change: "", icon: "💰" },
-    { id: 3, title: "Total Pengunjung", value: "4,582", change: "", icon: "👥" },
-    { id: 4, title: "Total Tiket Terjual", value: "8,927", change: "", icon: "🎟️" },
-    { id: 5, title: "Total Transaksi", value: "8,927", change: "", icon: "💳" },
+    { id: 1, title: "Active Events", value: "124", change: "", icon: "📅" },
+    { id: 2, title: "Total Sales", value: "IDR 1.25M", change: "", icon: "💰" },
+    { id: 3, title: "Total Visitors", value: "4,582", change: "", icon: "👥" },
+    { id: 4, title: "Total Tickets Sold", value: "8,927", change: "", icon: "🎟️" },
+    { id: 5, title: "Total Transactions", value: "8,927", change: "", icon: "💳" },
 
   ];
   
@@ -139,7 +139,7 @@ export default function AdminDashboard() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                   </svg>
                 </button>
-                <h1 className="text-xl font-semibold text-gray-800">Pengaturan</h1>
+                <h1 className="text-xl font-semibold text-gray-800">Settings</h1>
                 <div className="w-6"></div>
               </div>
             </header>
@@ -177,20 +177,10 @@ export default function AdminDashboard() {
         href="/organizer/create-event"
         className="hidden md:flex items-center bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
       >
-        <svg 
-          className="w-5 h-5 mr-2" 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            strokeWidth={2} 
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6" 
-          />
+        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
-        Buat Event
+        Create Event
       </Link>
       
       <div className="relative">
@@ -248,7 +238,7 @@ export default function AdminDashboard() {
           {/* Welcome Section */}
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-800">Home</h1>
-            <p className="text-gray-600">Selamat datang di BookIt</p>
+            <p className="text-gray-600">Welcome to BookIt</p>
           </div>
 
           {/* Stats Cards */}
@@ -412,7 +402,7 @@ export default function AdminDashboard() {
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl shadow-md p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Create New Event</h3>
               <p className="mb-4 text-white/80">
-              Mulailah menyiapkan acara Anda berikutnya dengan proses pembuatan kami yang efisien..
+                Start preparing your next event with our efficient creation process.
               </p>
               <Link
                 href="/"
@@ -423,7 +413,7 @@ export default function AdminDashboard() {
             <div className="bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl shadow-md p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Generate Reports</h3>
               <p className="mb-4 text-white/80">
-              Dapatkan laporan tentang bisnis Anda dengan analisis yang terperinci..
+                Get detailed analytical reports about your business.
               </p>
               <Link 
                 href="/organizer/reports" 
@@ -435,7 +425,7 @@ export default function AdminDashboard() {
             <div className="bg-gradient-to-r from-pink-500 to-red-500 rounded-xl shadow-md p-6 text-white">
               <h3 className="font-bold text-lg mb-4">Manage Settings</h3>
               <p className="mb-4 text-white/80">
-              Perbarui pengaturan platform Anda dan sesuaikan tampilannya..
+                Update your platform settings and customize its appearance.
               </p>
               <Link
                 href="/organizer/pengaturan"

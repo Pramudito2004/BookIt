@@ -43,13 +43,13 @@ export default function Sidebar() {
       section: "Dashboard",
       items: [
         {
-          name: "Event Saya",
+          name: "My Events",
           icon: "M15 5a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h10zm-4 6a2 2 0 100-4 2 2 0 000 4z",
           id: "event-saya",
           path: "/organizer/event-saya",
         },
         {
-          name: "Laporan",
+          name: "Reports",
           icon: "M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
           id: "reports",
           path: "/organizer/reports",
@@ -60,7 +60,7 @@ export default function Sidebar() {
       section: "Mode User",
       items: [
         {
-          name: "Beralih ke Akun Pembeli",
+          name: "Change to Customer Account",
           icon: "M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4",
           id: "switch",
           path: "/customer/dashboard",

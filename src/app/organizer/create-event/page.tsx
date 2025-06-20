@@ -370,12 +370,12 @@ export default function CreateEventPage() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold text-white">Buat Event Baru</h1>
+          <h1 className="text-3xl font-bold text-white">Create New Event</h1>
           <button
             onClick={() => router.back()}
             className="bg-white rounded-full px-6 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            Batal
+            Cancel
           </button>
         </div>
 
@@ -391,7 +391,7 @@ export default function CreateEventPage() {
               >
                 1
               </div>
-              <span className="text-sm font-medium">Info Dasar</span>
+              <span className="text-sm font-medium">Basic Info</span>
             </div>
 
             {/* Line connector */}
@@ -411,7 +411,7 @@ export default function CreateEventPage() {
               >
                 2
               </div>
-              <span className="text-sm font-medium">Tanggal & Lokasi</span>
+              <span className="text-sm font-medium">Date & Location</span>
             </div>
 
             {/* Line connector */}
@@ -431,7 +431,7 @@ export default function CreateEventPage() {
               >
                 3
               </div>
-              <span className="text-sm font-medium">Tiket</span>
+              <span className="text-sm font-medium">Tickets</span>
             </div>
           </div>
 
@@ -452,7 +452,7 @@ export default function CreateEventPage() {
                     name="nama_event"
                     value={formData.nama_event}
                     onChange={handleChange}
-                    placeholder="Masukkan nama event"
+                    placeholder="Enter event name"
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                     required
                   />
@@ -663,8 +663,8 @@ export default function CreateEventPage() {
                   </div>
 
                   <p className="text-sm text-gray-500 mt-2">
-                    * Anda dapat menambahkan gambar venue map dengan mengklik
-                    tombol gambar di toolbar
+                    * You can add venue map images by clicking the image button in
+                    the toolbar
                   </p>
                 </div>
 
@@ -679,7 +679,7 @@ export default function CreateEventPage() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none"
                     required
                   >
-                    <option value="">Pilih kategori</option>
+                    <option value="">Select category</option>
                     <option value="Music">Music</option>
                     <option value="Sports">Sports</option>
                     <option value="Arts">Arts</option>
@@ -745,7 +745,7 @@ export default function CreateEventPage() {
                           />
                         </svg>
                         <p className="mt-2 text-sm text-gray-500">
-                          Unggah foto untuk event Anda
+                          Upload photo for your event
                         </p>
                       </div>
                     )}
@@ -762,10 +762,10 @@ export default function CreateEventPage() {
                         htmlFor="event-image"
                         className="cursor-pointer bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
                       >
-                        {selectedImage ? "Ganti Gambar" : "Upload Gambar"}
+                        {selectedImage ? "Change Image" : "Upload Image"}
                       </label>
                       <p className="text-xs text-gray-500 ml-3">
-                        Format: JPG, PNG. Maks: 2MB
+                        Format: JPG, PNG. Max: 2MB
                       </p>
                     </div>
                   </div>
@@ -847,7 +847,7 @@ export default function CreateEventPage() {
                           setIsDropdownOpen(true);
                         }}
                         onFocus={() => setIsDropdownOpen(true)}
-                        placeholder="Cari kota/kabupaten..."
+                        placeholder="Search city/region..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
 
@@ -866,7 +866,7 @@ export default function CreateEventPage() {
                             ))
                           ) : (
                             <div className="px-4 py-2 text-gray-500">
-                              Tidak ada hasil yang ditemukan
+                              No results found
                             </div>
                           )}
                         </div>
@@ -882,7 +882,7 @@ export default function CreateEventPage() {
                         type="text"
                         value={detailLocation}
                         onChange={handleDetailLocationChange}
-                        placeholder="Masukkan nama gedung, alamat lengkap, dll"
+                        placeholder="Enter venue name, complete address, etc."
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                       />
                     </div>
@@ -949,7 +949,7 @@ export default function CreateEventPage() {
                           name="nama"
                           value={ticket.nama}
                           onChange={(e) => handleTicketChange(index, e)}
-                          placeholder="Mis. VIP, Regular, Early Bird"
+                          placeholder="E.g. VIP, Regular, Early Bird"
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
                           required
                         />

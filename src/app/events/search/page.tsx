@@ -126,7 +126,7 @@ export default function SearchResults() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8 }}
           >
-            Hasil pencarian untuk "{query}"
+            Search results for "{query}"
           </motion.h1>
         </div>
 
@@ -186,9 +186,9 @@ export default function SearchResults() {
               />
             </svg>
             <h3 className="text-xl font-medium text-gray-700 mb-1">
-              Tidak ada event yang ditemukan
+              No Events found
             </h3>
-            <p className="text-gray-500">Coba dengan kata kunci lain</p>
+            <p className="text-gray-500">Try different keyword</p>
           </motion.div>
         ) : (
           <motion.div 
