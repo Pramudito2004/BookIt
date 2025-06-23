@@ -507,42 +507,54 @@ export default function CustomerDashboard() {
     }
   };
 
-  // Handle payment success
+// Handle payment success
   const handlePaymentSuccess = async () => {
     if (!currentPayment) return;
 
     try {
-      // Update payment status
-      await fetch(`/api/payments/status/${currentPayment.orderId}`);
+      // Update payment status and check current order status
+      const response = await fetch(`/api/payments/status/${currentPayment.orderId}`);
+      const data = await response.json();
       
-      setPaymentSuccess(true);
       setShowMidtransSnap(false);
       
-      // Refresh tickets to show updated status
-      setTimeout(() => {
-        window.location.reload();
-      }, 2000);
+      if (response.ok && data.order_status === 'PAID') {
+        // If truly paid, redirect to success page
+        router.push(`/payment/success?order_id=${currentPayment.orderId}`);
+      } else {
+        // If still pending or other status, redirect to pending page
+        router.push(`/payment/pending?order_id=${currentPayment.orderId}`);
+      }
     } catch (err) {
-      console.error("Error updating payment status:", err);
+      console.error("Error checking payment status:", err);
+      // If there's an error checking status, redirect to pending page for status verification
+      setShowMidtransSnap(false);
+      router.push(`/payment/pending?order_id=${currentPayment.orderId}`);
     }
   };
 
   // Handle payment pending
   const handlePaymentPending = () => {
     setShowMidtransSnap(false);
-    router.push(`/payment/pending?order_id=${currentPayment?.orderId}`);
+    // Always redirect to pending page for pending payments
+    if (currentPayment) {
+      router.push(`/payment/pending?order_id=${currentPayment.orderId}`);
+    }
   };
 
   // Handle payment error
   const handlePaymentError = () => {
     setShowMidtransSnap(false);
-    alert("Payment failed. Please try again.");
+    setCurrentPayment(null);
+    // Show error message but stay on dashboard
+    alert("Payment failed or was cancelled. You can try again from your dashboard.");
   };
 
-  // Handle payment close
+  // Handle payment close (when user closes Midtrans popup)
   const handlePaymentClose = () => {
     setShowMidtransSnap(false);
     setCurrentPayment(null);
+    // Don't redirect on close, stay on dashboard
   };
 
   return (
