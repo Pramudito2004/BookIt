@@ -76,6 +76,12 @@ export default function EventsPage() {
       if (data.events) {
         let filteredEvents = [...data.events];
 
+        // Filter out past events
+        const now = new Date();
+        filteredEvents = filteredEvents.filter(
+          (event) => new Date(event.tanggal_selesai) >= now
+        );
+
         // Apply category filter if not "All"
         if (activeCategory !== "All") {
           filteredEvents = filteredEvents.filter(
