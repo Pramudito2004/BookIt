@@ -68,8 +68,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       user: {
         id: user.user_id,
-        email: user.email,
         name: user.pembeli?.nama_pembeli || user.event_creator?.nama_brand,
+        email: user.email,
+        kontak: user.kontak,
         type: 'customer', // Default type
         activeRole: 'customer', // Default role when logging in
         roles: {

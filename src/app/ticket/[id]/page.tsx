@@ -44,7 +44,7 @@ interface Event {
 interface CheckoutFormData {
   fullName: string;
   email: string;
-  phone: string;
+  kontak: string;
 }
 
 export default function EventDetailPage() {
@@ -69,7 +69,7 @@ export default function EventDetailPage() {
   const [formData, setFormData] = useState<CheckoutFormData>({
     fullName: "",
     email: "",
-    phone: "",
+    kontak: "",
   });
   const [formErrors, setFormErrors] = useState<Partial<CheckoutFormData>>({});
   const [orderSuccess, setOrderSuccess] = useState(false);
@@ -127,6 +127,7 @@ export default function EventDetailPage() {
         ...prevData,
         fullName: user.name || prevData.fullName,
         email: user.email || prevData.email,
+        kontak: user.kontak || prevData.kontak,
       }));
     }
   }, [user]);
@@ -213,8 +214,8 @@ export default function EventDetailPage() {
       errors.email = "Format email tidak valid";
     }
 
-    if (!formData.phone.trim()) {
-      errors.phone = "Nomor telepon diperlukan";
+    if (!formData.kontak.trim()) {
+      errors.kontak = "Nomor telepon diperlukan";
     }
 
     setFormErrors(errors);
@@ -237,9 +238,12 @@ export default function EventDetailPage() {
   };
 
   // Handle the Midtrans Snap callbacks
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
+    // Panggil endpoint status untuk update order di DB
+    if (orderData?.order?.order_id) {
+      await fetch(`/api/payments/status/${orderData.order.order_id}`);
+    }
     setOrderSuccess(true);
-    // Redirect to dashboard after 3 seconds
     setTimeout(() => {
       router.push('/customer/dashboard');
     }, 3000);
@@ -288,7 +292,7 @@ export default function EventDetailPage() {
         buyer_info: {
           name: formData.fullName,
           email: formData.email,
-          phone: formData.phone,
+          kontak: formData.kontak,
         },
         payment_method: "Midtrans",
       };
@@ -810,20 +814,20 @@ export default function EventDetailPage() {
                       </label>
                       <input
                         type="tel"
-                        name="phone"
-                        value={formData.phone}
+                        name="kontak"
+                        value={formData.kontak}
                         onChange={handleInputChange}
                         className={`w-full p-2 border ${
-                          formErrors.phone
+                          formErrors.kontak
                             ? "border-red-500"
                             : "border-gray-300"
                         } rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500`}
                         placeholder="Masukkan nomor telepon"
                         disabled={isProcessing}
                       />
-                      {formErrors.phone && (
+                      {formErrors.kontak && (
                         <p className="text-red-500 text-xs mt-1">
-                          {formErrors.phone}
+                          {formErrors.kontak}
                         </p>
                       )}
                     </div>

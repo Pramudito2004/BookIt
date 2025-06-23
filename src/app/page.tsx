@@ -80,8 +80,14 @@ export default function HomePage() {
       const data = await response.json();
 
       if (data.events && data.events.length > 0) {
+        // Filter out past events (event yang sudah selesai)
+        const now = new Date();
+        const upcoming = data.events.filter(
+          (event: Event) => new Date(event.tanggal_selesai) >= now
+        );
+
         // Sort events by date (newest first)
-        const sortedEvents = [...data.events].sort(
+        const sortedEvents = [...upcoming].sort(
           (a, b) =>
             new Date(a.tanggal_mulai).getTime() -
             new Date(b.tanggal_mulai).getTime()
@@ -113,6 +119,12 @@ export default function HomePage() {
 
       if (data.events) {
         let filteredEvents = [...data.events];
+
+        // Filter out past events
+        const now = new Date();
+        filteredEvents = filteredEvents.filter(
+          (event) => new Date(event.tanggal_selesai) >= now
+        );
 
         // Apply category filter if not "All"
         if (category !== "All") {
