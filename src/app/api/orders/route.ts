@@ -15,7 +15,7 @@ const OrderSchema = z.object({
   buyer_info: z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email("Invalid email address"),
-    phone: z.string().min(1, "Phone is required")
+    kontak: z.string().min(1, "Phone is required")
   }),
   payment_method: z.string().min(1, "Payment method is required")
 })
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
         customer_details: {
           first_name: validatedData.buyer_info.name,
           email: validatedData.buyer_info.email,
-          phone: validatedData.buyer_info.phone,
+          kontak: validatedData.buyer_info.kontak,
         },
         callbacks: {
           finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success?order_id=${order.order_id}`,

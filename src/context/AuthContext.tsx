@@ -21,7 +21,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, phoneNumber: string, gender: string, dateOfBirth: string) => Promise<void>;
+  register: (name: string, email: string, password: string, kontak: string, gender: string, dateOfBirth: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
   setUser: (user: User | null) => void;
@@ -98,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     name: string, 
     email: string, 
     password: string,
-    phoneNumber: string, 
+    kontak: string, 
     gender: string,      
     dateOfBirth: string  
   ) => {
@@ -115,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           name, 
           email, 
           password,
-          phoneNumber,
+          kontak,
           gender,
           dateOfBirth
          })

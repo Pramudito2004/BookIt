@@ -14,7 +14,7 @@ export default function InformasiDasarPage() {
     shortUrl: 'https://loket.com/o/',
     organizerName: 'Muhammad Daffa Ayyasy',
     email: 'daffa@example.com',
-    phone: '+6281234567890',
+    kontak: '+6281234567890',
     address: 'Jl. Contoh No. 123, Jakarta',
     about: 'Penyelenggara event kreatif dan inovatif',
     featuredEvent: '',
@@ -184,8 +184,8 @@ export default function InformasiDasarPage() {
                     </label>
                     <input
                       type="tel"
-                      name="phone"
-                      value={formData.phone}
+                      name="kontak"
+                      value={formData.kontak}
                       onChange={handleChange}
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
                       required

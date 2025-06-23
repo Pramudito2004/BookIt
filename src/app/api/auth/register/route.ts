@@ -11,7 +11,7 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Nama harus minimal 2 karakter'),
   email: z.string().email('Email tidak valid'),
   password: z.string().min(8, 'Password harus minimal 8 karakter'),
-  phoneNumber: z.string().min(10, 'Nomor telepon minimal 10 digit'),
+  kontak: z.string().min(10, 'Nomor telepon minimal 10 digit'),
   gender: z.enum(['MALE', 'FEMALE']),
   dateOfBirth: z.string().refine(val => !isNaN(new Date(val).getTime()), {
     message: "Tanggal lahir tidak valid"
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
         data: {
           email: validatedData.email,
           password: hashedPassword,
-          kontak: validatedData.phoneNumber, // This should match your schema
+          kontak: validatedData.kontak, // This should match your schema
           jenis_kelamin: validatedData.gender as JenisKelamin,
           tanggal_lahir: new Date(validatedData.dateOfBirth),
         }
