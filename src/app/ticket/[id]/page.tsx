@@ -237,37 +237,20 @@ export default function EventDetailPage() {
     setPaymentError(null);
   };
 
-// Handle the Midtrans Snap callbacks
+  // Handle the Midtrans Snap callbacks
   const handlePaymentSuccess = async () => {
-    if (!orderData?.order?.order_id) return;
-
-    try {
-      // Check payment status after success callback
-      const response = await fetch(`/api/payments/status/${orderData.order.order_id}`);
-      const data = await response.json();
-      
-      setShowMidtransSnap(false);
-      
-      if (response.ok && data.order_status === 'PAID') {
-        // If truly paid, redirect to success page
-        router.push(`/payment/success?order_id=${orderData.order.order_id}`);
-      } else {
-        // If still pending, redirect to pending page
-        router.push(`/payment/pending?order_id=${orderData.order.order_id}`);
-      }
-    } catch (err) {
-      console.error("Error checking payment status:", err);
-      // If error checking status, redirect to pending page
-      setShowMidtransSnap(false);
-      router.push(`/payment/pending?order_id=${orderData.order.order_id}`);
+    // Panggil endpoint status untuk update order di DB
+    if (orderData?.order?.order_id) {
+      await fetch(`/api/payments/status/${orderData.order.order_id}`);
     }
+    setOrderSuccess(true);
+    setTimeout(() => {
+      router.push('/customer/dashboard');
+    }, 3000);
   };
 
   const handlePaymentPending = () => {
-    setShowMidtransSnap(false);
-    if (orderData?.order?.order_id) {
-      router.push(`/payment/pending?order_id=${orderData.order.order_id}`);
-    }
+    router.push(`/payment/pending?order_id=${orderData?.order?.order_id}`);
   };
 
   const handlePaymentError = () => {

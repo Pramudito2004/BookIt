@@ -76,7 +76,7 @@ interface ApiTicket {
 interface UserProfileData {
   user_id: string;
   email: string;
-  jenis_kelamin: 'MALE' | 'FEMALE';
+  jenis_kelamin: "MALE" | "FEMALE";
   tanggal_lahir: string;
   kontak: string | null;
   foto_profil: string | null;
@@ -119,11 +119,16 @@ export default function CustomerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   // Payment related states
   const [showMidtransSnap, setShowMidtransSnap] = useState(false);
-  const [currentPayment, setCurrentPayment] = useState<PaymentData | null>(null);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [currentPayment, setCurrentPayment] = useState<PaymentData | null>(
+    null
+  );
+  // Change this to track processing state per ticket ID
+  const [processingTickets, setProcessingTickets] = useState<
+    Set<string | number>
+  >(new Set());
   const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const getDisplayName = () => {
@@ -141,7 +146,7 @@ export default function CustomerDashboard() {
   // Check if user is authenticated
   useEffect(() => {
     if (!user) {
-      router.push('/login?redirectTo=/customer/dashboard');
+      router.push("/login?redirectTo=/customer/dashboard");
     } else {
       fetchUserProfile();
     }
@@ -154,22 +159,22 @@ export default function CustomerDashboard() {
 
     try {
       const response = await fetch(`/api/user/profile/${userId}`);
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch user profile');
+        throw new Error("Failed to fetch user profile");
       }
 
       const userData: UserProfileData = await response.json();
-      
+
       // Update user profile dengan nama yang sesuai
-      setUserProfile(prev => ({
+      setUserProfile((prev) => ({
         ...prev,
-        name: userData.pembeli?.nama_pembeli || 
-              userData.event_creator?.nama_brand || 
-              prev.name,
+        name:
+          userData.pembeli?.nama_pembeli ||
+          userData.event_creator?.nama_brand ||
+          prev.name,
         email: userData.email || prev.email,
       }));
-
     } catch (err) {
       console.error("Error fetching user profile:", err);
     }
@@ -177,41 +182,41 @@ export default function CustomerDashboard() {
 
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchUserTickets = async () => {
       setIsLoading(true);
       try {
         // Ambil tiket dari API
         const userId = user.id;
         const response = await fetch(`/api/users/${userId}/tickets`);
-        
+
         if (!response.ok) {
           throw new Error("Failed to fetch tickets");
         }
-        
+
         const data = await response.json();
         processTickets(data.tickets);
       } catch (err) {
         console.error("Error fetching tickets:", err);
-        
+
         // Gunakan tiket dari store jika API gagal
         if (storedTickets.length > 0) {
           processStoredTickets(storedTickets);
         } else {
           setError("Failed to load your tickets");
-          
+
           // Initialize with empty tickets if API fails
           setTickets({
             active: [],
-            past: []
+            past: [],
           });
-          
-          setUserProfile(prev => ({
+
+          setUserProfile((prev) => ({
             ...prev,
             ticketsCount: {
               active: 0,
-              past: 0
-            }
+              past: 0,
+            },
           }));
         }
       } finally {
@@ -220,7 +225,7 @@ export default function CustomerDashboard() {
     };
 
     fetchUserTickets();
-    
+
     // Reset flag tiket baru
     if (hasNewTickets) {
       setHasNewTickets(false);
@@ -420,7 +425,7 @@ export default function CustomerDashboard() {
       case "PENDING":
         return "PENDING";
       case "PAID":
-        return "PAID"; 
+        return "PAID";
       case "CANCELLED":
         return "Cancelled";
       default:
@@ -449,7 +454,7 @@ export default function CustomerDashboard() {
   const handleLogout = () => {
     if (logout) {
       logout();
-      router.push('/login');
+      router.push("/login");
     }
   };
 
@@ -479,23 +484,24 @@ export default function CustomerDashboard() {
       return;
     }
 
-    setIsProcessingPayment(true);
+    // Add this ticket ID to processing set
+    setProcessingTickets((prev) => new Set(prev).add(ticket.id));
 
     try {
       // Get the order details and regenerate payment token
       const response = await fetch(`/api/orders/${ticket.orderId}/payment`);
-      
+
       if (!response.ok) {
         throw new Error("Failed to get payment details");
       }
 
       const data = await response.json();
-      
+
       setCurrentPayment({
         orderId: ticket.orderId,
         snapToken: data.snap_token,
         eventTitle: ticket.eventTitle,
-        totalAmount: parseInt(ticket.price.replace(/\D/g, ''))
+        totalAmount: parseInt(ticket.price.replace(/\D/g, "")),
       });
 
       setShowMidtransSnap(true);
@@ -503,22 +509,35 @@ export default function CustomerDashboard() {
       console.error("Error getting payment details:", err);
       alert("Failed to continue payment. Please try again.");
     } finally {
-      setIsProcessingPayment(false);
+      // Remove this ticket ID from processing set
+      setProcessingTickets((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(ticket.id);
+        return newSet;
+      });
     }
   };
 
-// Handle payment success
+  // Helper function to check if a specific ticket is processing
+  const isTicketProcessing = (ticketId: string | number) => {
+    return processingTickets.has(ticketId);
+  };
+
+  // Updated payment success handler
   const handlePaymentSuccess = async () => {
     if (!currentPayment) return;
 
     try {
       // Update payment status and check current order status
-      const response = await fetch(`/api/payments/status/${currentPayment.orderId}`);
+      const response = await fetch(
+        `/api/payments/status/${currentPayment.orderId}`
+      );
       const data = await response.json();
-      
+
       setShowMidtransSnap(false);
-      
-      if (response.ok && data.order_status === 'PAID') {
+      setCurrentPayment(null);
+
+      if (response.ok && data.order_status === "PAID") {
         // If truly paid, redirect to success page
         router.push(`/payment/success?order_id=${currentPayment.orderId}`);
       } else {
@@ -529,28 +548,32 @@ export default function CustomerDashboard() {
       console.error("Error checking payment status:", err);
       // If there's an error checking status, redirect to pending page for status verification
       setShowMidtransSnap(false);
+      setCurrentPayment(null);
       router.push(`/payment/pending?order_id=${currentPayment.orderId}`);
     }
   };
 
-  // Handle payment pending
+  // Updated payment pending handler
   const handlePaymentPending = () => {
     setShowMidtransSnap(false);
     // Always redirect to pending page for pending payments
     if (currentPayment) {
       router.push(`/payment/pending?order_id=${currentPayment.orderId}`);
     }
+    setCurrentPayment(null);
   };
 
-  // Handle payment error
+  // Updated payment error handler
   const handlePaymentError = () => {
     setShowMidtransSnap(false);
     setCurrentPayment(null);
     // Show error message but stay on dashboard
-    alert("Payment failed or was cancelled. You can try again from your dashboard.");
+    alert(
+      "Payment failed or was cancelled. You can try again from your dashboard."
+    );
   };
 
-  // Handle payment close (when user closes Midtrans popup)
+  // Updated payment close handler
   const handlePaymentClose = () => {
     setShowMidtransSnap(false);
     setCurrentPayment(null);
@@ -594,7 +617,8 @@ export default function CustomerDashboard() {
                 Payment Successful!
               </h3>
               <p className="text-gray-600">
-                Your payment has been processed successfully. Your ticket is now active.
+                Your payment has been processed successfully. Your ticket is now
+                active.
               </p>
             </div>
           </div>
@@ -609,7 +633,9 @@ export default function CustomerDashboard() {
             <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6">
               <div className="flex items-center">
                 <div className="w-24 h-24 rounded-full border-4 border-white/30 flex items-center justify-center text-4xl font-medium text-white mr-6">
-                  {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : '?'}
+                  {userProfile.name
+                    ? userProfile.name.charAt(0).toUpperCase()
+                    : "?"}
                 </div>
                 <div>
                   <h1 className="text-2xl md:text-3xl font-bold mb-1">
@@ -735,23 +761,23 @@ export default function CustomerDashboard() {
                   {tickets[activeTab].length === 0 && !error && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                       <div className="mx-auto w-16 h-16 mb-4 text-gray-300">
-                        <svg 
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24" 
+                        <svg
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
                           className="w-6 h-6"
                         >
-                          <path 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            strokeWidth={2} 
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
                             d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                           />
                         </svg>
                       </div>
                       <h3 className="text-lg font-medium text-gray-800 mb-2">
-                        {activeTab === "active" 
-                          ? "No active tickets found" 
+                        {activeTab === "active"
+                          ? "No active tickets found"
                           : "No past events found"}
                       </h3>
                       <p className="text-gray-600 mb-6">
@@ -760,8 +786,8 @@ export default function CustomerDashboard() {
                           : "After attending events, they will appear here."}
                       </p>
                       {activeTab === "active" && (
-                        <Link 
-                          href="/events" 
+                        <Link
+                          href="/events"
                           className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors inline-block"
                         >
                           Explore Events
@@ -796,7 +822,9 @@ export default function CustomerDashboard() {
                                 />
                                 <div className="absolute top-0 left-0 m-2">
                                   <div
-                                    className={`text-xs font-bold px-2 py-1 rounded ${getStatusBadgeClass(ticket.status)}`}
+                                    className={`text-xs font-bold px-2 py-1 rounded ${getStatusBadgeClass(
+                                      ticket.status
+                                    )}`}
                                   >
                                     {ticket.status}
                                   </div>
@@ -897,11 +925,13 @@ export default function CustomerDashboard() {
                                     </Link>
                                     {ticket.status === "PENDING" ? (
                                       <button
-                                        onClick={() => handleContinuePayment(ticket)}
-                                        disabled={isProcessingPayment}
+                                        onClick={() =>
+                                          handleContinuePayment(ticket)
+                                        }
+                                        disabled={isTicketProcessing(ticket.id)}
                                         className="text-center py-2 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
                                       >
-                                        {isProcessingPayment ? (
+                                        {isTicketProcessing(ticket.id) ? (
                                           <div className="flex items-center justify-center">
                                             <div className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></div>
                                             Processing...

@@ -14,7 +14,6 @@ export default function PaymentPendingPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
-  const [checkCount, setCheckCount] = useState(0);
 
   const orderId = searchParams.get('order_id');
 
@@ -30,32 +29,11 @@ export default function PaymentPendingPage() {
       }
 
       setOrderStatus(data);
-      setCheckCount(prev => prev + 1);
 
       // If payment is completed, redirect to success page
       if (data.order_status === 'PAID') {
-        // Clear interval before redirecting
-        if (refreshInterval) {
-          clearInterval(refreshInterval);
-          setRefreshInterval(null);
-        }
         router.push(`/payment/success?order_id=${orderId}`);
-        return;
       }
-
-      // If payment is cancelled, show error
-      if (data.order_status === 'CANCELLED') {
-        if (refreshInterval) {
-          clearInterval(refreshInterval);
-          setRefreshInterval(null);
-        }
-        setError('Payment was cancelled or expired. Please try again from your dashboard.');
-        return;
-      }
-
-      // Continue checking if still pending
-      console.log(`Payment status check #${checkCount + 1}:`, data.order_status);
-
     } catch (err: any) {
       console.error('Error checking payment status:', err);
       setError(err.message || 'Failed to verify payment');
@@ -74,8 +52,8 @@ export default function PaymentPendingPage() {
     // Initial check
     checkPaymentStatus();
 
-    // Set up interval to check payment status every 15 seconds
-    const interval = setInterval(checkPaymentStatus, 15000);
+    // Set up interval to check payment status every 10 seconds
+    const interval = setInterval(checkPaymentStatus, 10000);
     setRefreshInterval(interval);
 
     // Cleanup interval on component unmount
@@ -86,47 +64,9 @@ export default function PaymentPendingPage() {
     };
   }, [orderId]);
 
-  // Stop checking after 20 attempts (5 minutes)
-  useEffect(() => {
-    if (checkCount >= 20 && orderStatus?.order_status === 'PENDING') {
-      if (refreshInterval) {
-        clearInterval(refreshInterval);
-        setRefreshInterval(null);
-      }
-      setError('Payment verification is taking longer than expected. Please check your dashboard later or contact support.');
-    }
-  }, [checkCount, orderStatus, refreshInterval]);
-
   const handleManualRefresh = () => {
     setIsLoading(true);
-    setError(null);
     checkPaymentStatus();
-  };
-
-  const getPaymentMethodInfo = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return {
-          title: 'Payment is Being Processed',
-          description: 'Your payment is currently being verified by the payment gateway.',
-          icon: '⏳',
-          color: 'yellow'
-        };
-      case 'settlement':
-        return {
-          title: 'Payment Successful',
-          description: 'Your payment has been confirmed and processed.',
-          icon: '✅',
-          color: 'green'
-        };
-      default:
-        return {
-          title: 'Checking Payment Status',
-          description: 'We are verifying your payment status.',
-          icon: '🔄',
-          color: 'blue'
-        };
-    }
   };
 
   if (error) {
@@ -141,7 +81,7 @@ export default function PaymentPendingPage() {
               </svg>
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-2">
-              Payment Status Check Failed
+              Error Checking Payment
             </h2>
             <p className="text-gray-600 mb-6">{error}</p>
             <div className="space-y-3">
@@ -164,8 +104,6 @@ export default function PaymentPendingPage() {
       </div>
     );
   }
-
-  const paymentInfo = getPaymentMethodInfo(orderStatus?.payment_status);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -193,13 +131,10 @@ export default function PaymentPendingPage() {
                   <strong>Order ID:</strong> {orderId}
                 </p>
                 <p className="text-sm text-yellow-700">
-                  <strong>Order Status:</strong> {orderStatus.order_status || 'PENDING'}
+                  <strong>Status:</strong> {orderStatus.order_status || 'PENDING'}
                 </p>
                 <p className="text-sm text-yellow-700">
                   <strong>Payment Status:</strong> {orderStatus.payment_status || 'PENDING'}
-                </p>
-                <p className="text-sm text-yellow-700">
-                  <strong>Checks Made:</strong> {checkCount}/20
                 </p>
               </div>
             </div>
@@ -241,19 +176,12 @@ export default function PaymentPendingPage() {
 
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <p className="text-xs text-gray-500 mb-2">
-              <strong>Auto-refresh:</strong> This page automatically checks for payment updates every 15 seconds.
+              <strong>Auto-refresh:</strong> This page automatically checks for payment updates every 10 seconds.
             </p>
             <p className="text-xs text-gray-500">
               If you close this page, you can always check your payment status from your dashboard.
             </p>
           </div>
-
-          {refreshInterval && (
-            <div className="mt-4 flex items-center justify-center text-sm text-gray-500">
-              <div className="animate-pulse w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-              Auto-checking payment status...
-            </div>
-          )}
 
           <div className="mt-6">
             <p className="text-sm text-gray-600">
