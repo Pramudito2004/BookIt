@@ -7,6 +7,7 @@ import Link from "next/link";
 import useTicketsStore from "@/hooks/useTicketsStore";
 import Navbar from "@/app/components/Navbar";
 import Footer from "@/app/components/Footer";
+import MidtransSnap from "@/app/components/MidtransSnap";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { OrderStatus } from "@prisma/client";
@@ -24,6 +25,7 @@ interface Ticket {
   image: string;
   status: string;
   eventId?: string;
+  orderId?: string;
 }
 
 // Define tickets data structure
@@ -66,7 +68,7 @@ interface ApiTicket {
   };
   order: {
     jumlah_total: number;
-    status: OrderStatus; // Update this to use OrderStatus
+    status: OrderStatus;
   };
 }
 
@@ -86,6 +88,14 @@ interface UserProfileData {
     deskripsi_creator: string | null;
     no_rekening: string | null;
   };
+}
+
+// Interface untuk payment data
+interface PaymentData {
+  orderId: string;
+  snapToken: string;
+  eventTitle: string;
+  totalAmount: number;
 }
 
 export default function CustomerDashboard() {
@@ -109,11 +119,16 @@ export default function CustomerDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  // Payment related states
+  const [showMidtransSnap, setShowMidtransSnap] = useState(false);
+  const [currentPayment, setCurrentPayment] = useState<PaymentData | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const getDisplayName = () => {
-  if (!userProfile) return "";
-  return userProfile.name || userProfile.email ||
-   "User";
+    if (!userProfile) return "";
+    return userProfile.name || userProfile.email || "User";
   };
 
   // Get stored tickets from Zustand
@@ -128,7 +143,7 @@ export default function CustomerDashboard() {
     if (!user) {
       router.push('/login?redirectTo=/customer/dashboard');
     } else {
-      fetchUserProfile(); // Panggil fungsi fetch profile
+      fetchUserProfile();
     }
   }, [user, router]);
 
@@ -160,57 +175,57 @@ export default function CustomerDashboard() {
     }
   };
 
-useEffect(() => {
-  if (!user) return;
-  
-  const fetchUserTickets = async () => {
-    setIsLoading(true);
-    try {
-      // Ambil tiket dari API
-      const userId = user.id;
-      const response = await fetch(`/api/users/${userId}/tickets`);
-      
-      if (!response.ok) {
-        throw new Error("Failed to fetch tickets");
-      }
-      
-      const data = await response.json();
-      processTickets(data.tickets);
-    } catch (err) {
-      console.error("Error fetching tickets:", err);
-      
-      // Gunakan tiket dari store jika API gagal
-      if (storedTickets.length > 0) {
-        processStoredTickets(storedTickets);
-      } else {
-        setError("Failed to load your tickets");
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUserTickets = async () => {
+      setIsLoading(true);
+      try {
+        // Ambil tiket dari API
+        const userId = user.id;
+        const response = await fetch(`/api/users/${userId}/tickets`);
         
-        // Initialize with empty tickets if API fails
-        setTickets({
-          active: [],
-          past: []
-        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch tickets");
+        }
         
-        setUserProfile(prev => ({
-          ...prev,
-          ticketsCount: {
-            active: 0,
-            past: 0
-          }
-        }));
+        const data = await response.json();
+        processTickets(data.tickets);
+      } catch (err) {
+        console.error("Error fetching tickets:", err);
+        
+        // Gunakan tiket dari store jika API gagal
+        if (storedTickets.length > 0) {
+          processStoredTickets(storedTickets);
+        } else {
+          setError("Failed to load your tickets");
+          
+          // Initialize with empty tickets if API fails
+          setTickets({
+            active: [],
+            past: []
+          });
+          
+          setUserProfile(prev => ({
+            ...prev,
+            ticketsCount: {
+              active: 0,
+              past: 0
+            }
+          }));
+        }
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchUserTickets();
-  
-  // Reset flag tiket baru
-  if (hasNewTickets) {
-    setHasNewTickets(false);
-  }
-}, [storedTickets, hasNewTickets, setHasNewTickets, user]);
+    fetchUserTickets();
+    
+    // Reset flag tiket baru
+    if (hasNewTickets) {
+      setHasNewTickets(false);
+    }
+  }, [storedTickets, hasNewTickets, setHasNewTickets, user]);
 
   // Process stored tickets from Zustand store
   const processStoredTickets = (storedTickets: any[]) => {
@@ -259,6 +274,7 @@ useEffect(() => {
         image: ticket.image || "/api/placeholder/500/300",
         status: ticket.status,
         eventId: ticket.eventId,
+        orderId: ticket.orderId,
       };
 
       // Categorize as active or past
@@ -313,8 +329,9 @@ useEffect(() => {
         ticketCode: ticket.kode_qr,
         price: `Rp ${ticket.tipe_tiket.harga.toLocaleString()}`,
         image: ticket.tipe_tiket.event.foto_event || "/api/placeholder/500/300",
-        status: mapStatus(ticket.order.status), // Use order status instead of ticket status
+        status: mapStatus(ticket.order.status),
         eventId: ticket.tipe_tiket.event.event_id,
+        orderId: ticket.order_id,
       };
 
       // Categorize as active or past based on event date and order status
@@ -455,9 +472,122 @@ useEffect(() => {
     }
   };
 
+  // Handle continue payment
+  const handleContinuePayment = async (ticket: Ticket) => {
+    if (!ticket.orderId) {
+      console.error("No order ID found for ticket");
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      // Get the order details and regenerate payment token
+      const response = await fetch(`/api/orders/${ticket.orderId}/payment`);
+      
+      if (!response.ok) {
+        throw new Error("Failed to get payment details");
+      }
+
+      const data = await response.json();
+      
+      setCurrentPayment({
+        orderId: ticket.orderId,
+        snapToken: data.snap_token,
+        eventTitle: ticket.eventTitle,
+        totalAmount: parseInt(ticket.price.replace(/\D/g, ''))
+      });
+
+      setShowMidtransSnap(true);
+    } catch (err) {
+      console.error("Error getting payment details:", err);
+      alert("Failed to continue payment. Please try again.");
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  // Handle payment success
+  const handlePaymentSuccess = async () => {
+    if (!currentPayment) return;
+
+    try {
+      // Update payment status
+      await fetch(`/api/payments/status/${currentPayment.orderId}`);
+      
+      setPaymentSuccess(true);
+      setShowMidtransSnap(false);
+      
+      // Refresh tickets to show updated status
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (err) {
+      console.error("Error updating payment status:", err);
+    }
+  };
+
+  // Handle payment pending
+  const handlePaymentPending = () => {
+    setShowMidtransSnap(false);
+    router.push(`/payment/pending?order_id=${currentPayment?.orderId}`);
+  };
+
+  // Handle payment error
+  const handlePaymentError = () => {
+    setShowMidtransSnap(false);
+    alert("Payment failed. Please try again.");
+  };
+
+  // Handle payment close
+  const handlePaymentClose = () => {
+    setShowMidtransSnap(false);
+    setCurrentPayment(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
+
+      {/* Midtrans Snap Integration */}
+      {showMidtransSnap && currentPayment && (
+        <MidtransSnap
+          snapToken={currentPayment.snapToken}
+          onSuccess={handlePaymentSuccess}
+          onPending={handlePaymentPending}
+          onError={handlePaymentError}
+          onClose={handlePaymentClose}
+        />
+      )}
+
+      {/* Payment Success Modal */}
+      {paymentSuccess && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl p-8 max-w-md w-full text-center">
+            <div className="mb-6">
+              <svg
+                className="w-16 h-16 mx-auto text-green-600 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                Payment Successful!
+              </h3>
+              <p className="text-gray-600">
+                Your payment has been processed successfully. Your ticket is now active.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dashboard Content */}
       <div className="pt-24 pb-16">
@@ -593,19 +723,19 @@ useEffect(() => {
                   {tickets[activeTab].length === 0 && !error && (
                     <div className="bg-gray-50 border border-gray-200 rounded-lg p-8 text-center">
                       <div className="mx-auto w-16 h-16 mb-4 text-gray-300">
-                <svg 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24" 
-                  className="w-6 h-6"
-                >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                  />
-                </svg>
+                        <svg 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24" 
+                          className="w-6 h-6"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            strokeWidth={2} 
+                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                          />
+                        </svg>
                       </div>
                       <h3 className="text-lg font-medium text-gray-800 mb-2">
                         {activeTab === "active" 
@@ -753,12 +883,29 @@ useEffect(() => {
                                     >
                                       View Details
                                     </Link>
-                                    <Link
-                                      href={`/ticket/view/${ticket.id}`}
-                                      className="text-center py-2 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 text-sm font-medium"
-                                    >
-                                      View Ticket
-                                    </Link>
+                                    {ticket.status === "PENDING" ? (
+                                      <button
+                                        onClick={() => handleContinuePayment(ticket)}
+                                        disabled={isProcessingPayment}
+                                        className="text-center py-2 px-4 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition-all duration-300 text-sm font-medium disabled:opacity-70 disabled:cursor-not-allowed"
+                                      >
+                                        {isProcessingPayment ? (
+                                          <div className="flex items-center justify-center">
+                                            <div className="w-4 h-4 border-t-2 border-b-2 border-white rounded-full animate-spin mr-2"></div>
+                                            Processing...
+                                          </div>
+                                        ) : (
+                                          "Continue Payment"
+                                        )}
+                                      </button>
+                                    ) : (
+                                      <Link
+                                        href={`/ticket/view/${ticket.id}`}
+                                        className="text-center py-2 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-300 text-sm font-medium"
+                                      >
+                                        View Ticket
+                                      </Link>
+                                    )}
                                   </>
                                 ) : (
                                   <>
@@ -787,6 +934,6 @@ useEffect(() => {
         </div>
       </div>
       <Footer />
-      </div>
+    </div>
   );
 }
