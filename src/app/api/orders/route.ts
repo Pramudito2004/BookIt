@@ -3,7 +3,7 @@ import prisma from "@/lib/prisma";
 import type { Prisma } from "@prisma/client";
 import { z } from 'zod'
 import { createSnapInstance } from '@/lib/midtrans';
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus, TiketStatus } from "@prisma/client";
 
 // Validation Schema for orders
 const OrderSchema = z.object({
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = OrderSchema.parse(body)
 
-    // Begin a transaction
+    // Begin a transaction with increased timeout (20 seconds)
     const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Check if ticket type exists and has enough availability
       const ticketType = await tx.tipeTiket.findUnique({
@@ -68,26 +68,29 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // 3. Create the tickets with AVAILABLE status initially
-      const tickets = [];
-      for (let i = 0; i < validatedData.quantity; i++) {
-        const ticket = await tx.tiket.create({
-          data: {
-            tiket_type_id: validatedData.tiket_type_id,
-            order_id: order.order_id,
-            status: 'AVAILABLE', // Ubah dari 'SOLD' ke 'AVAILABLE'
-            kode_qr: `TICKET-${Date.now()}-${i}` // Generate a simple QR code reference
-          }
-        })
-        tickets.push(ticket)
-      }
+      // 3. Create multiple tickets using createMany for better performance
+      const ticketData = Array.from({ length: validatedData.quantity }, (_, i) => ({
+        tiket_type_id: validatedData.tiket_type_id,
+        order_id: order.order_id,
+        status: TiketStatus.AVAILABLE, // Use enum instead of string
+        kode_qr: `TICKET-${Date.now()}-${order.order_id}-${i}` // More unique QR code
+      }));
 
-      // Create payment record
+      await tx.tiket.createMany({
+        data: ticketData
+      });
+
+      // Get the created tickets for the response
+      const tickets = await tx.tiket.findMany({
+        where: { order_id: order.order_id }
+      });
+
+      // 4. Create payment record
       const payment = await tx.pembayaran.create({
         data: {
           order_id: order.order_id,
           jumlah: validatedData.jumlah_total,
-          status: 'PENDING', // Keep payment status as 'pending'
+          status: 'PENDING', // This should match your Pembayaran status enum
         }
       })
 
@@ -101,7 +104,7 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // 6. Generate Midtrans Snap token
+      // 6. Generate Midtrans Snap token (keep this simple and fast)
       const snap = createSnapInstance();
       
       // Calculate the exact amount
@@ -155,6 +158,9 @@ export async function POST(request: NextRequest) {
         snap_token: snapResponse.token,
         redirect_url: snapResponse.redirect_url
       }
+    }, {
+      // Increase transaction timeout to 20 seconds
+      timeout: 20000,
     })
 
     return NextResponse.json({
@@ -178,6 +184,14 @@ export async function POST(request: NextRequest) {
         error: 'Insufficient tickets', 
         message: 'The requested number of tickets is not available' 
       }, { status: 400 })
+    }
+
+    // Check if it's a timeout error
+    if (error.message?.includes('timeout') || error.message?.includes('expired transaction')) {
+      return NextResponse.json({ 
+        error: 'Transaction timeout', 
+        message: 'The transaction took too long to process. Please try again.' 
+      }, { status: 408 })
     }
 
     return NextResponse.json({ 
